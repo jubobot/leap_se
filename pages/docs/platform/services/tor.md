@@ -20,6 +20,7 @@ Configuration
 ------------------------------
 
 * `tor.bandwidth_rate`: the max bandwidth allocated to Tor, in KB per second, when used as an exit node.
+* `tor.type`: what type of tor node to make, at this moment only 'exit' is supported. If not specified, acts as a relay.
 
 For example:
 
