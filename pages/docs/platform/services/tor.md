@@ -26,7 +26,8 @@ For example:
 
     {
       "tor": {
-        "bandwidth_rate": 6550
+        "bandwidth_rate": 6550,
+        "type": "exit"
       }
     }
 
