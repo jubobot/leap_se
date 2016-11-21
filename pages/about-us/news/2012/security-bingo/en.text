@@ -12,7 +12,7 @@ Here is my attempt at playing:
 
 <%= render :partial => 'table' %>
 
-Looking at this table, it is immediately obvious that there are a lot of empty cells. Unfortunately, most of the cells that are filled in contain software that is unfriendly or even sadistic toward the user. Trying to use many of these tools can feel like developing a BDSM relationship with your computer, and you are not the top.
+Looking at this table, it is immediately obvious that there are a lot of empty cells. Unfortunately, most of the cells that are filled in contain software that is unfriendly or even sadistic toward the user.
 
 What is missing might be more revealing than what is listed. These toolsets are entirely absent from my 'security bingo' game card:
 
