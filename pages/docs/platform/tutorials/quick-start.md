@@ -141,9 +141,9 @@ NOTE: replace x.x.x.x with the actual IP address of this server.
 
 ### Option B: Add a local node
 
-Create a node, with the services "webapp" and "couchdb", and then start the local virtual machine:
+Create a node, with the services "webapp", "soledad" and "couchdb", and then start the local virtual machine:
 
-    workstation$ leap node add --local wildebeest services:webapp,couchdb
+    workstation$ leap node add --local wildebeest services:webapp,couchdb,soledad
     workstation$ leap local start wildebeest
 
 It will take a while to download the Virtualbox base box and create the virtual machine.
