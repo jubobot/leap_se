@@ -105,3 +105,5 @@ Special Environments
 When deploying to OpenStack release "nova" or newer, you will need to do an initial deploy, then when it has finished run `leap facts update` and then deploy again (see: https://leap.se/code/issues/3020)
 
 It is not possible to actually use the EIP openvpn server on vagrant nodes (see: https://leap.se/code/issues/2401)
+
+Proxmox virtualization isn't supported because it wants to overwrite our resolv.conf (see: https://leap.se/code/issues/8683)
