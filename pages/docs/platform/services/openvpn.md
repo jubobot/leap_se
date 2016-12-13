@@ -13,8 +13,8 @@ Configuration
 
 *Essential configuration*
 
-* `openvpn.gateway_address`: The address that OpenVPN daemon is bound to and that VPN clients connect to.
 * `ip_address`: The main IP of the server, and the egress address for outgoing traffic.
+* `openvpn.gateway_address`: A secondary address on the same machine (sharing the same interface, or on a separate interface). The OpenVPN daemon is bound to this address and VPN clients connect to it.
 
 For example:
 
