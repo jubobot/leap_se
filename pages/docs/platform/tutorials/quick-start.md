@@ -39,7 +39,11 @@ In order to be able to manage your servers, you need to install the `leap` comma
 
 Install core prerequisites on your workstation.
 
-*Debian & Ubuntu*
+*Debian Unstable (sid)*
+
+    workstation$ sudo apt-get install git rsync openssh-client openssl
+
+*Other Debian & Ubuntu*
 
     workstation$ sudo apt-get install git ruby ruby-dev rsync openssh-client openssl rake make bzip2
 
@@ -50,7 +54,13 @@ Install core prerequisites on your workstation.
 
 ### Install the LEAP command-line utility
 
-Install the `leap` command system-wide:
+Install the `leap` command system-wide.
+
+If on Debian Unstable (sid), simply do this:
+
+    workstation$ sudo apt install leap-cli
+
+Otherwise, you will need to do this:
 
     workstation$ sudo gem install leap_cli
 
