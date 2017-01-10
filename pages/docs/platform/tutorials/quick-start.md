@@ -22,7 +22,7 @@ NOTE: You won't be able to run that `leap list` command yet, not until we actual
 1. A workstation: This is your local machine that you will run commands on.
 1. A server: This is the machine that you will deploy to. The server can be either:
    1. A local Vagrant virtual machine: a Vagrant machine can only be useful for testing.
-   1. A real or paravirtualized server: The server must have Debian Jessie installed, and you must be able to SSH into the machine as root. Paravirtualization includes KVM, Xen, OpenStack, Amazon, but not VirtualBox or OpenVZ. Proxmox has an known issue when changing the resolver: https://leap.se/code/issues/8683
+   1. A real or paravirtualized server: The server must have Debian Jessie installed, and you must be able to SSH into the machine as root. Paravirtualization includes KVM, Xen, OpenStack, Amazon, but not VirtualBox or OpenVZ. Proxmox has an known issue [[when changing the resolver=> https://leap.se/code/issues/8683]]
 
 Other things to keep in mind:
 
