@@ -41,11 +41,11 @@ Install core prerequisites on your workstation.
 
 *Debian Unstable (sid)*
 
-    workstation$ sudo apt-get install git rsync openssh-client openssl
+    workstation$ sudo apt-get install git rsync openssh-client openssl zlib1g-dev
 
 *Other Debian & Ubuntu*
 
-    workstation$ sudo apt-get install git ruby ruby-dev rsync openssh-client openssl rake make bzip2
+    workstation$ sudo apt-get install git ruby ruby-dev rsync openssh-client openssl rake make bzip2 zlib1g-dev
 
 *Mac OS*
 
