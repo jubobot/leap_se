@@ -248,3 +248,61 @@ Let's Encrypt validations are short lived. You will need to renew the certificat
 
 There is no need to create a new CSR: renewing will reuse the old private key and the old CSR. It is especially important to not create a new CSR if you have advertised public key pins using HPKP.
 
+## Issues
+
+### Certs already expired
+
+When a cert is already expired, you can get into a possible deadlock situation on your servers which you can only resolve manually at the moment.
+
+
+#### Install the official acme client
+
+Log in to your webapp node and install the `certbot` package:
+
+    server$ apt install -t jessie-backports certbot
+
+#### Fetch cert
+
+Stop apache so the letsencrypt client can bind to port 80:
+
+    server$ systemctl stop apache2
+
+Fetch the certs
+
+    server$ certbot certonly --standalone --email admin@$(hostname -d) -d $(hostname -d) -d api.$(hostname -d) -d $(hostname -f) -d nicknym.$(hostname -d)
+
+This will put the certs and keys into `/etc/letsencrypt/live/DOMAIN/`.
+
+Now, go to your workstation's provider configuration directory and copy the newly created files from the server to your local config. You will override existing files so please make a backup before proceeding, or use a version control system to track changes.
+
+    workstation$ cd PATH_TO_PROVIDER_CONFIG
+
+Copy the Certificate
+
+    workstation$ scp root@SERVER:/etc/letsencrypt/live/$(hostname -d)/cert.pem files/cert/DOMAIN.crt
+
+Copy the private key
+
+    workstation$ scp root@SERVER:/etc/letsencrypt/live/$(hostname -d)/privkey.pem files/cert/DOMAIN.key
+
+Copy the CA chain cert
+
+    workstation$ scp root@SERVER:/etc/letsencrypt/live/$(hostname -d)/fullchain.pem files/cert/commercial_ca.crt
+
+#### Deploy the certs
+
+Now you only need to deploy the certs
+
+    workstation$ leap deploy
+
+This will put them into the right locations which are:
+
+- `/etc/x509/certs/leap_commercial.crt` for the certificate
+- `/etc/x509/./keys/leap_commercial.key` for the private key
+- `/usr/local/share/ca-certificates/leap_commercial_ca.crt` for the CA chain cert.
+
+Start apache2 again
+
+    server$ systemctl start apache2
+
+Done! In the future please make sure to always renew letsencrypt certificates before they expire ;).
