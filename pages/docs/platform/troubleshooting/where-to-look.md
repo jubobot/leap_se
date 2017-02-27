@@ -30,21 +30,10 @@ Places to look for errors
 * `/var/log/leap/*`
 
 
-Is haproxy ok ?
----------------
-
-    curl -s -X  GET "http://127.0.0.1:4096"
-
 Is couchdb accessible through stunnel ?
 ---------------------------------------
 
-* Depending on how many couch nodes you have, increase the port for every test
-  (see /etc/haproxy/haproxy.cfg for the server/port mapping):
-
-
     curl -s -X  GET "http://127.0.0.1:4000"
-    curl -s -X  GET "http://127.0.0.1:4001"
-    ...
 
 
 Check couchdb acl as admin
@@ -55,8 +44,8 @@ Check couchdb acl as admin
     echo "machine 127.0.0.1 login admin password <PASSWORD>" > /etc/couchdb/couchdb-admin.netrc
     chmod 600 /etc/couchdb/couchdb-admin.netrc
 
-    curl -s --netrc-file /etc/couchdb/couchdb-admin.netrc -X GET "http://127.0.0.1:4096"
-    curl -s --netrc-file /etc/couchdb/couchdb-admin.netrc -X GET "http://127.0.0.1:4096/_all_dbs"
+    curl -s --netrc-file /etc/couchdb/couchdb-admin.netrc -X GET "http://127.0.0.1:4000"
+    curl -s --netrc-file /etc/couchdb/couchdb-admin.netrc -X GET "http://127.0.0.1:4000/_all_dbs"
 
 Check couchdb acl as unpriviledged user
 ---------------------------------------
@@ -65,8 +54,8 @@ Check couchdb acl as unpriviledged user
     echo "machine 127.0.0.1 login webapp password <PASSWORD>" > /etc/couchdb/couchdb-webapp.netrc
     chmod 600 /etc/couchdb/couchdb-webapp.netrc
 
-    curl -s --netrc-file /etc/couchdb/couchdb-webapp.netrc -X GET "http://127.0.0.1:4096"
-    curl -s --netrc-file /etc/couchdb/couchdb-webapp.netrc -X GET "http://127.0.0.1:4096/_all_dbs"
+    curl -s --netrc-file /etc/couchdb/couchdb-webapp.netrc -X GET "http://127.0.0.1:4000"
+    curl -s --netrc-file /etc/couchdb/couchdb-webapp.netrc -X GET "http://127.0.0.1:4000/_all_dbs"
 
 
 All URLs accessible ?
@@ -157,13 +146,7 @@ Places to look for errors
 Is couchdb accessible through stunnel ?
 ---------------------------------------
 
-* Depending on how many couch nodes you have, increase the port for every test
-  (see /etc/haproxy/haproxy.cfg for the server/port mapping):
-
-
     curl -s -X  GET "http://127.0.0.1:4000"
-    curl -s -X  GET "http://127.0.0.1:4001"
-    ...
 
 Query leap-mx
 -------------
@@ -202,11 +185,8 @@ Check couchdb acl as unpriviledged user
     echo "machine 127.0.0.1 login leap_mx password <PASSWORD>" > /etc/couchdb/couchdb-leap_mx.netrc
     chmod 600 /etc/couchdb/couchdb-leap_mx.netrc
 
-    curl -s --netrc-file /etc/couchdb/couchdb-leap_mx.netrc -X GET "http://127.0.0.1:4096/_all_dbs"   # pick one "user-<hash>" db
-    curl -s --netrc-file /etc/couchdb/couchdb-leap_mx.netrc -X GET "http://127.0.0.1:4096/user-de9c77a3d7efbc779c6c20da88e8fb9c"
-
-
-* you may check multiple times, cause 127.0.0.1:4096 is haproxy load-balancing the different couchdb nodes
+    curl -s --netrc-file /etc/couchdb/couchdb-leap_mx.netrc -X GET "http://127.0.0.1:4000/_all_dbs"   # pick one "user-<hash>" db
+    curl -s --netrc-file /etc/couchdb/couchdb-leap_mx.netrc -X GET "http://127.0.0.1:4000/user-de9c77a3d7efbc779c6c20da88e8fb9c"
 
 
 Mailspool
@@ -243,5 +223,3 @@ Places to look for errors
 -------------------------
 
 * `/var/log/syslog` (watch out for openvpn issues)
-
-
