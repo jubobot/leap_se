@@ -279,15 +279,15 @@ Now, go to your workstation's provider configuration directory and copy the newl
 
 Copy the Certificate
 
-    workstation$ scp root@SERVER:/etc/letsencrypt/live/$(hostname -d)/cert.pem files/cert/DOMAIN.crt
+    workstation$ scp 'root@SERVER:/etc/letsencrypt/live/$(hostname -d)/cert.pem' files/cert/DOMAIN.crt
 
 Copy the private key
 
-    workstation$ scp root@SERVER:/etc/letsencrypt/live/$(hostname -d)/privkey.pem files/cert/DOMAIN.key
+    workstation$ scp 'root@SERVER:/etc/letsencrypt/live/$(hostname -d)/privkey.pem' files/cert/DOMAIN.key
 
 Copy the CA chain cert
 
-    workstation$ scp root@SERVER:/etc/letsencrypt/live/$(hostname -d)/fullchain.pem files/cert/commercial_ca.crt
+    workstation$ scp 'root@SERVER:/etc/letsencrypt/live/$(hostname -d)/fullchain.pem' files/cert/commercial_ca.crt
 
 #### Deploy the certs
 
