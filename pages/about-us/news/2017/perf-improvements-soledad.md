@@ -1,6 +1,7 @@
 @title = 'Improving performance of user encrypted data sync'
 @author = 'drebs'
 @posted_at = '2017-03-3'
+@preview_image = '/img/pages/soledad-performance/upload.png'
 @more = true
 
 ## Performance improvements in synchronization of user encrypted data
