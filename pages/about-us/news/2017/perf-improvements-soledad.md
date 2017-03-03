@@ -23,7 +23,6 @@ By changing the algorithms used to encrypt and decrypt user data, as well as to 
     ![raw encrypt times](/img/pages/soledad-performance/raw_encrypt.png) 
     ![raw decrypt times](/img/pages/soledad-performance/raw_decrypt.png) 
 
-These were only some of the bits polished to make it feasible to have end-to-end encrypted user data synchronized among devices. We plan to release the next Bitmask Client and LEAP Platform with these and other improvements, and also keep delivering improvements to support easier to use and better privacy tools.
+These were only some of the bits polished to help make it feasible to have end-to-end encrypted user data synchronized among devices. Also, the performance metrics presented here are only the ones related with total synchronization time. More complete results including memory consumption and application responsiveness will follow soon.
 
-Note also that the performance metrics presented above are only the ones related with total synchronization time. More complete results including memory consumption and application responsiveness will follow soon.
-
+We plan to release the next Bitmask Client and LEAP Platform with these and other features, and keep delivering improvements to support easier to use and better privacy tools. 
