@@ -1,4 +1,4 @@
-@title = 'Improving performance of user encrypted data synch'
+@title = 'Improving performance of user encrypted data sync'
 @author = 'drebs'
 @posted_at = '2017-03-3'
 @more = true
@@ -17,13 +17,11 @@ By fixing some flaws and reworking the data transfer and encryption/decryption p
     ![download times](/img/pages/soledad-performance/download.png) 
 
 For upload, on the other hand, the increase was much more striking. The nature of the synchronization algorithm requires that uploaded data is inserted in an orderly manner in the server. When trying different ways to handle that requirement, we ended up having a very slow algorithm that enqueued data to be uploaded in the client, and sent one by one, taking a long time to finish the whole transfer. After reworking that algorithm, we achieved from 2 to 37 times faster upload speeds, depending on the scenario:
-
-    [figure: https://share.riseup.net/#W9faBoKYJwPOm8U1diEhUg ]
+    ![upload times](/img/pages/soledad-performance/upload.png) 
 
 By changing the algorithms used to encrypt and decrypt user data, as well as to authenticate the contents (so we know that data has not been tampered with), we also diminished the time taken for cryptographic operations as a whole. The following figures show the encryption/decryption (plus authentication) times for different sizes of raw data:
-
-    [figure: https://share.riseup.net/#iw7cEMw_cdLnDem2CsMbZw ]
-    [figure: https://share.riseup.net/#AJWMxy8nGtlQ7ER03v7D2w ]
+    ![raw encrypt times](/img/pages/soledad-performance/raw_encrypt.png) 
+    ![raw decrypt times](/img/pages/soledad-performance/raw_decrypt.png) 
 
 These were only some of the bits polished to make it feasible to have end-to-end encrypted user data synchronized among devices. We plan to release the next Bitmask Client and LEAP Platform with these and other improvements, and also keep delivering improvements to support easier to use and better privacy tools.
 
