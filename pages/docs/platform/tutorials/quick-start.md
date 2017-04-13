@@ -33,7 +33,7 @@ Other things to keep in mind:
 Prepare your workstation
 ========================
 
-In order to be able to manage your servers, you need to install the `leap` command on your workstation:
+In order to be able to manage your servers, you need to setup the LEAP Platform on your desktop. This consists of three parts: the platform recipes, the `leap` command, and your provider instance. We will go over these step-by-step below, you can find more details in the [platform introduction](platform).
 
 ### Install pre-requisites
 
@@ -52,9 +52,23 @@ Install core prerequisites on your workstation.
     workstation$ brew install ruby-install
     workstation$ ruby-install ruby
 
+### The platform recipes
+
+The LEAP platform recipes are a set modules designed to work together to provide you everything you need to manage your provider. You typically do not need to modify these, but do need them available for deploying your provider.
+
+To obtain the platform recipes, simply clone the git repository, and then check out the most recent release branch. *Platform MASTER IS UNSTABLE, ONLY RELEASE BRANCHES SHOULD BE USED!*
+
+    workstation$ git clone https://leap.se/git/leap_platform
+    workstation$ git checkout -b 0.9.x origin/version/0.9.x
+
 ### Install the LEAP command-line utility
 
-Install the `leap` command system-wide.
+The `leap` [command line tool](guide/commands) is what you use to manage everything about your provider.
+
+Keep these rules in mind:
+
+* `leap` is run on your workstation: The `leap` command is always run locally on your workstation, never on a server you are deploying to.
+* `leap` is run from within a provider instance: The `leap` command requires that the current working directory is a valid provider instance, except when running `leap new` to create a new provider instance.
 
 If on Debian Unstable (sid), simply do this:
 
