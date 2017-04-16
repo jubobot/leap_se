@@ -8,7 +8,7 @@
     "en": "LEAP Encryption Access Project"
   },
   "domain": "leap.se",
-  "enrollment_policy": "open",
+  "enrollment_policy": "invite",
   "languages": [
     "en"
   ],
