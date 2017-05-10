@@ -212,7 +212,7 @@ It will install a single node mail server in the default configuration with one 
 
 Clone the platform with
 
-    git clone --recursive -b develop https://github.com/leapcode/leap_platform.git
+    git clone https://leap.se/git/leap_platform
 
 Start the vagrant box with
 
