@@ -216,7 +216,7 @@ Clone the platform with
 
 Start the vagrant box with
 
-    cd leap_platform
+    cd leap_platform/tests/example-provider
     vagrant up
 
 Follow the instructions how to configure your `/etc/hosts`
