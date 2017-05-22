@@ -71,6 +71,7 @@ A more complete example `cloud.json`:
 See also:
 
 * [[Available instance types for AWS => https://aws.amazon.com/ec2/instance-types/]]
+* [[Where’s My Secret Access Key? => https://aws.amazon.com/pt/blogs/security/wheres-my-secret-access-key/]]
 
 Usage
 --------------------------------------------
