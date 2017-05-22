@@ -93,6 +93,10 @@ You can specify seed values to `leap vm add`. For example:
 
     leap vm add mynode services:webapp tags:seattle vm.options.InstanceType:t2.small
 
+For an email provider installation, you should specify the following seeds:
+
+    leap vm add mynode services:webapp,couchdb,soledad,mx
+
 Check to see what the status is of all VMs:
 
     leap vm status
