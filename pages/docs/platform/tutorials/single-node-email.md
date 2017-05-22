@@ -25,9 +25,11 @@ In order to add [[services => services]] to a node, edit the node's JSON configu
 In our example, we would edit `nodes/wildebeest.json`:
 
     {
-      "ip_address": "1.1.1.1",
+      "ip_address": "XXX.XXX.XXX.XXX",
       "services": ["couchdb", "webapp", "mx", "soledad"]
     }
+
+Where "XXX.XXX.XXX.XXX" should be replaced by your IP provider.
 
 Here, we added `mx` and `soledad` to the node's `services` list. Briefly:
 
