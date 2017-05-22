@@ -172,6 +172,11 @@ Create a node, with the services "webapp", "soledad" and "couchdb", and then sta
 
 It will take a while to download the Virtualbox base box and create the virtual machine.
 
+
+### Option C: Add a virtual machine
+
+In order to create a provider using the cloud, please follow this [instructions](https://leap.se/en/docs/platform/guide/virtual-machines).
+
 Deploy your provider
 =========================================
 
