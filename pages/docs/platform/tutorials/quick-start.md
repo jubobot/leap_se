@@ -56,10 +56,10 @@ Install core prerequisites on your workstation.
 
 The LEAP platform recipes are a set modules designed to work together to provide you everything you need to manage your provider. You typically do not need to modify these, but do need them available for deploying your provider.
 
-To obtain the platform recipes, simply clone the git repository, and then check out the most recent release branch. *Platform MASTER IS UNSTABLE, ONLY RELEASE BRANCHES SHOULD BE USED!*
+To obtain the platform recipes, simply clone the git repository, and then check out the most recent release branch.
 
     workstation$ git clone https://leap.se/git/leap_platform
-    workstation$ git checkout -b 0.9.x origin/version/0.9.x
+
 
 ### Install the LEAP command-line utility
 
