@@ -56,7 +56,11 @@ Install core prerequisites on your workstation.
 
 The LEAP platform recipes are a set modules designed to work together to provide you everything you need to manage your provider. You typically do not need to modify these, but do need them available for deploying your provider.
 
-To obtain the platform recipes, simply clone the git repository, and then check out the most recent release branch.
+To obtain the platform recipes, simply clone the git repository, and then check out the most recent stable release branch:
+
+    workstation$ git checkout -b 0.9.x origin/version/0.9.x
+
+If you want to get the latest development branch (Beware: it could be unstable !) you could simply use the master branch by:
 
     workstation$ git clone https://leap.se/git/leap_platform
 
@@ -173,7 +177,7 @@ Create a node, with the services "webapp", "soledad" and "couchdb", and then sta
 It will take a while to download the Virtualbox base box and create the virtual machine.
 
 
-### Option C: Add a virtual machine
+### Option C: Add a virtual machine in the cloud
 
 In order to create a provider using the cloud, please follow this [instructions](https://leap.se/en/docs/platform/guide/virtual-machines).
 
