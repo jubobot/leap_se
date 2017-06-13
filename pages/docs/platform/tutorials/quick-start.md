@@ -58,9 +58,9 @@ The LEAP platform recipes are a set modules designed to work together to provide
 
 To obtain the platform recipes, simply clone the git repository, and then check out the most recent stable release branch:
 
-    workstation$ git checkout -b 0.9.x origin/version/0.9.x
+    workstation$ git clone -b version/0.9.x https://leap.se/git/leap_platform
 
-If you want to get the latest development branch (Beware: it could be unstable !) you could simply use the master branch by:
+If you want to get the latest development branch (Beware: it could be unstable !) you could simply use the master branch instead by:
 
     workstation$ git clone https://leap.se/git/leap_platform
 
