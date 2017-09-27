@@ -3,3 +3,5 @@ public/*
 !public/.gitkeep
 *~
 docs/platform/public/*
+/.rbenv-gemsets
+/.ruby-version
