@@ -1,0 +1,19 @@
+---
+image: 0xacab.org:4567/leap/docker/ruby:stretch_amd64
+
+deploy:
+  environment:
+    name: production
+  only:
+    - master
+  before_script:
+    # install ssh-agent
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+    # run ssh-agent
+    - eval $(ssh-agent -s)
+    # add ssh key stored in SSH_PRIVATE_KEY variable to the agent store
+    - ssh-add <(echo "$SSH_PRIVATE_KEY")
+  script:
+    - apt-get update
+    - apt-get install -y --no-install-recommends capistrano
+    - cap deploy
