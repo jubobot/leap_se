@@ -17,6 +17,7 @@ docs
   get-involved
     communication
     coding
+    report-a-bug
     source
     project-ideas
   tech
