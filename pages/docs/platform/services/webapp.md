@@ -36,7 +36,6 @@ Essential options:
 Other options:
 
 * `webapp.engines`: A list of the engines you want enabled in leap_web. Currently, only "support" is available, and it is enabled by default.
-* `webapp.invite_required`: If true, registration requires an invite code. Default is `false`.
 
 For example, `services/webapp.json`:
 
@@ -53,31 +52,34 @@ There are many options in `provider.json` that also control how the webapp behav
 Invite codes
 -------------------
 
-Enabling the invite code functionality will require new users to provide a valid invite code while signing up for a new account. This is turned off by default, allowing all new users to create an account.
+The invite code functionality will require new users to provide a valid invite code while signing up for a new account. This is turned on by default since platform version 0.10. When switching it off, anyone will be able to create a new account.
 
-Set the `invite_code` option to `true` in `services/webapp.json`:
+Because even the first (admin) user that registers needs to have an invite code at hand, you´ll have to generate one:
+
+    workstation$ leap run invite
+      = [bumblebee] running `cd /srv/leap/webapp; RAILS_ENV=production bundle exec rake "generate_invites[1,1]"`
+      = [bumblebee] pgae-aaub
+      = [bumblebee] complete in 5.031s.
+
+Where `bumblebee` should be replaced with the name of your webapp node. You can now browse to https://example.com (replace with your domain) and register your first user, by using the invite code you just generated. If you added your user as an admin user (see above), you can now also generate new invite codes from within the web application.
+
+It is possible to specify both **NUM**, the amount of codes to generate and **USES**: an optional parameter: by default all new invite codes can be used once and will then become invalid. If you provide another value, you can set how often it can be used before they're invalidated. To generate 2 codes that can be both reused 3 times you can run this:
+
+    workstation$ leap run invite 2,3 prodcution
+      = [bumblebee] running `cd /srv/leap/webapp; RAILS_ENV=production bundle exec rake "generate_invites[2,3]"`
+      = [bumblebee] pgae-aaub
+psau-2qwbs
+      = [bumblebee] complete in 5.031s.
+
+If you want to open up registration to the world, you can set the `enrollment_policy` option to `open` in `provider.json`:
 
     {
-      "webapp": {
-        "invite_required": true
-      }
+      "enrollment_policy": "open"
     }
 
-This only works with LEAP platform 0.8 or higher.
+This only works with LEAP platform 0.8 or higher. The default enrollment policy changed from open to invite with the platform 0.10.
 
-Run `leap deploy` to enable the option.
-
-You can then generate invite codes by logging into the web application with an admin user.
-
-Alternately, you can also generate invite codes with the command line:
-
-    workstation$ leap ssh bumblebee
-    bumblebee# cd /srv/leap/webapp/
-    bumblebee# sudo -u leap-webapp RAILS_ENV=production bundle exec rake "generate_invites[NUM,USES]"
-
-Where `bumblebee` should be replaced with the name of your webapp node.
-
-The **NUM** specifies the amount of codes to generate. The **USES** parameter is optional: By default, all new invite codes can be used once and will then become invalid. If you provide another value for **USES**, you can set a different amount of maximum uses for the codes you generate.
+Run `leap deploy` to disable the option.
 
 Customization
 ---------------------------

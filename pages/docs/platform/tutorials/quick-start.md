@@ -231,7 +231,7 @@ Alternately, you can run these same tests from the server itself:
 Create an administrator
 ===============================
 
-Assuming that you set up your DNS or `/etc/hosts` file, you should be able to load `https://example.org` in your web browser (where example.org is whatever domain name you actually used).
+The registration of new users is since the platform 0.10 restricted by default. You will need to generate an `invite code.` A simple `leap run invite` will give you an code like `ptxy-rsy1` which you can use to register a user. Assuming that you set up your DNS or `/etc/hosts` file, you should be able to load `https://example.org` in your web browser (where example.org is whatever domain name you actually used).
 
 Your browser will complain about an untrusted cert, but for now just bypass this. From there, you should be able to register a new user and login.
 
@@ -245,7 +245,7 @@ Once you have created a user, you can now make this user an administrator. For e
 
 Save that file and run `leap deploy` again. When you next log on to the web application, the user kangaroo will now be an admin.
 
-If you want to restrict who can register a new user, see [[webapp]] for configuration options.
+If you want to open up registration of new users, see [[webapp]] for configuration options.
 
 What is next?
 ======================

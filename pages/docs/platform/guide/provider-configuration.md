@@ -27,7 +27,7 @@ Recommended provider configuration
 * `description`: A longer description of the provider, shown to the user when they register a new account through Bitmask client.
 * `languages`: A list of language codes that should be enabled.
 * `default_language`: The initial default language code.
-* `enrollment_policy`: One of "open", "closed", or "invite". (invite not currently supported).
+* `enrollment_policy`: One of "open", "closed", or "invite". Defaults to invite.
 
 For example:
 
@@ -35,7 +35,7 @@ For example:
       "description": "It is time for robots of the world to unite and throw of the shackles of servitude to our organic overlords.",
       "languages": ["en", "de", "pt", "01"],
       "default_language": "01",
-      "enrollman_policy": "open"
+      "enrollment_policy": "open"
     }
 
 For a full list of possible settings, you can use `leap inspect` to see how provider.json is evaluated after including the inherited defaults:
