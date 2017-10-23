@@ -1,0 +1,2898 @@
+@title = "Soledad"
+@summary = "A server daemon and client library to provide client-encrypted application data that is kept synchronized among multiple client devices."
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="soledad">
+<p>Synchronization of Locally Encrypted Data Among Devices.</p>
+<div class="section" id="what-is-soledad">
+<h1>What is Soledad?<a class="headerlink" href="#what-is-soledad" title="Permalink to this headline"></a></h1>
+<p>Soledad is a client library and a server daemon that together allow
+applications to securely share a common state among devices. It is <a class="reference external" href="https://leap.se/">LEAP</a>’s solution for mail delivery and for synchronizing
+client-encrypted data among a user’s devices that access an account in a LEAP
+provider.</p>
+<p>Soledad is cross-platform, open source, scalable, and features a highly
+efficient synchronization algorithm. The Client and Server are written in
+Python using <a class="reference external" href="https://twistedmatrix.com/">Twisted</a>. Source code is available
+at <a class="reference external" href="https://0xacab.org/leap/soledad">0xacab</a> and is licensed under the <a class="reference external" href="http://www.gnu.org/licenses/gpl.txt">GPLv3</a>. Client and server are packaged
+together and distributed in <a class="reference external" href="https://pypi.python.org/pypi/leap.soledad">pypi</a>. <a class="reference external" href="https://deb.leap.se/">Debian packages</a> are also provided for the server-side component.</p>
+</div>
+<div class="section" id="soledad-documentation">
+<h1>Soledad documentation<a class="headerlink" href="#soledad-documentation" title="Permalink to this headline"></a></h1>
+<div class="toctree-wrapper compound">
+<span id="document-intro"></span><div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline"></a></h2>
+<p>Soledad consists of a client library and server daemon that allows applications
+to securely share a common state among devices. The local application is
+presented with a simple, document-centric searchable database API. Any data
+saved to the database by the application is client-encrypted, backed up in the
+cloud, and synchronized among a user’s devices. Soledad is cross-platform, open
+source, scalable, and features a highly efficient synchronization algorithm.</p>
+<p>Key aspects of Soledad include:</p>
+<ul class="simple">
+<li><strong>Client and server:</strong> Soledad includes a <a class="reference internal" href="index.html#soledad-server"><span class="std std-ref">server daemon</span></a> and a <a class="reference internal" href="index.html#soledad-client"><span class="std std-ref">client application library</span></a>.</li>
+<li><strong>Client-side encrypted sync:</strong> Soledad puts very little trust in the server
+by <a class="reference internal" href="index.html#document-encryption"><span class="std std-ref">encrypting all data</span></a> before it is
+<span class="xref std std-ref">synchronized</span> to the server and by limiting ways in
+which the server can modify the user’s data.</li>
+<li><strong>Encrypted local storage:</strong> All data cached locally is <a class="reference internal" href="index.html#client-databases"><span class="std std-ref">stored in an
+encrypted database</span></a>.</li>
+<li><strong>Document database:</strong> An application using the Soledad client library is
+presented with a <a class="reference internal" href="index.html#soledad-client-api"><span class="std std-ref">document-centric database API</span></a>
+for storage and sync. Documents may be indexed, searched, and versioned.</li>
+<li><strong>Encrypted attachments:</strong> storage and synchronization of <a class="reference internal" href="index.html#blobs"><span class="std std-ref">Blobs</span></a> is
+supported.</li>
+</ul>
+<p>Soledad is an acronym of “Synchronization of Locally Encrypted Documents Among
+Devices” and means “solitude” in Spanish.</p>
+<p>See also:</p>
+<div class="toctree-wrapper compound">
+<span id="document-intro/data-availability"></span><div class="section" id="the-importance-of-data-availability">
+<h3>The importance of data availability<a class="headerlink" href="#the-importance-of-data-availability" title="Permalink to this headline"></a></h3>
+<p>Users today demand high data availability in their applications. As a user
+switches from device to device, the expectation is that each application will
+reflect the same state information across devices. Additionally, if all devices
+are lost or destroyed, the contemporary user expects to be able to restore her
+or his application data from the cloud.</p>
+<p>In many ways, data availability has become a necessary precondition for an
+application to be considered “user friendly”. Unfortunately, most applications
+attempt to provide high data availability by rolling their own custom solution
+or relying on a third party API, such as Dropbox. This approach is has several
+drawbacks: the user has no control or access to the data should they wish to
+switch applications or data providers; custom data synchronizations schemes are
+often an afterthought, poorly designed, and vulnerable to attack and data
+breaches; and the user must place total trust in the provider to safeguard her
+or his information against requests by repressive governments.</p>
+<p>Soledad provides secure data availability in a way that is easy for application
+developers to incorporate into their code.</p>
+</div>
+<span id="document-intro/goals"></span><div class="section" id="goals">
+<h3>Goals<a class="headerlink" href="#goals" title="Permalink to this headline"></a></h3>
+<div class="section" id="security-goals">
+<p><b>Security goals<a class="headerlink" href="#security-goals" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li><strong>Client-side encryption:</strong> Before any data is synced to the cloud, it should
+be encrypted on the client device.</li>
+<li><strong>Encrypted local storage:</strong> Any data cached in the client should be stored
+in an encrypted format.</li>
+<li><strong>Resistant to offline attacks:</strong> Data stored on the server should be highly
+resistant to offline attacks (i.e. an attacker with a static copy of data
+stored on the server would have a very hard time discerning much from the
+data).</li>
+<li><strong>Resistant to online attacks:</strong> Analysis of storing and retrieving data
+should not leak potentially sensitive information.</li>
+<li><strong>Resistance to data tampering:</strong> The server should not be able to provide
+the client with old or bogus data for a document.</li>
+</ul>
+</div>
+<div class="section" id="synchronization-goals">
+<p><b>Synchronization goals<a class="headerlink" href="#synchronization-goals" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li><strong>Consistency:</strong> multiple clients should all get sync’ed with the same data.</li>
+<li><strong>Selective sync:</strong> the ability to partially sync data. For example, so
+a mobile device doesn’t need to sync all email attachments.</li>
+<li><strong>Multi-platform:</strong> supports both desktop and mobile clients.</li>
+<li><strong>Quota:</strong> the ability to identify how much storage space a user is taking up.</li>
+<li><strong>Scalable cloud:</strong> distributed master-less storage on the cloud side, with
+no single point of failure.</li>
+<li><strong>Conflict resolution:</strong> conflicts are flagged and handed off to the
+application logic to resolve.  Usability goals</li>
+<li><strong>Availability:</strong> the user should always be able to access their data.</li>
+<li><strong>Recovery:</strong> there should be a mechanism for a user to recover their data
+should they forget their password.</li>
+</ul>
+</div>
+<div class="section" id="known-limitations">
+<p><b>Known limitations<a class="headerlink" href="#known-limitations" title="Permalink to this headline"></a></b></p>
+<p>These are currently known limitations:</p>
+<ul class="simple">
+<li>The server knows when the contents of a document have changed.</li>
+<li>There is no facility for sharing documents among multiple users.</li>
+<li>Soledad is not able to prevent server from withholding new documents or new
+revisions of a document.</li>
+<li>Deleted documents are never deleted, just emptied. Useful for security reasons, but could lead to DB bloat.</li>
+</ul>
+</div>
+<div class="section" id="non-goals">
+<p><b>Non-goals<a class="headerlink" href="#non-goals" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Soledad is not for filesystem synchronization, storage or backup. It provides
+an API for application code to synchronize and store arbitrary schema-less
+JSON documents in one big flat document database. One could model
+a filesystem on top of Soledad, but it would be a bad fit.</li>
+<li>Soledad is not intended for decentralized peer-to-peer synchronization,
+although the underlying synchronization protocol does not require a server.
+Soledad takes a cloud approach in order to ensure that a client has quick
+access to an available copy of the data.</li>
+</ul>
+</div>
+</div>
+<span id="document-intro/related"></span><div class="section" id="related-projects">
+<h3>Related projects<a class="headerlink" href="#related-projects" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/SpiderOak/crypton">Crypton</a>: Similar goals to Soledad,
+but in javascript for HTML5 applications.</li>
+<li><a class="reference external" href="https://github.com/strikeout/mylar">Mylar</a>: Like Crypton, Mylar can be
+used to write secure HTML5 applications in javascript. Uniquely, it includes
+support for homomorphic encryption to allow server-side searches.</li>
+<li><a class="reference external" href="https://wiki.mozilla.org/Services/Sync">Firefox Sync</a>: A client-encrypted
+data sync from Mozilla, designed to securely synchronize bookmarks and other
+browser settings.</li>
+<li><a class="reference external" href="https://pythonhosted.org/u1db/">U1DB</a>: Document synchronization API used
+as a basis for Soledad, without encryption.</li>
+</ul>
+</div>
+</div>
+</div>
+<span id="document-server"></span><div class="section" id="soledad-server">
+<span id="id1"></span><h2>Soledad Server<a class="headerlink" href="#soledad-server" title="Permalink to this headline"></a></h2>
+<p>Soledad Server is a document store and a blobs server that can synchronize data
+with a Soledad Client.</p>
+<div class="section" id="configuring">
+<span id="server-config-file"></span><h3>Configuring<a class="headerlink" href="#configuring" title="Permalink to this headline"></a></h3>
+<p>Soledad Server looks for a configuration file in
+<code class="docutils literal"><span class="pre">/etc/soledad/soledad-server.conf</span></code> and will read the following configuration
+options from the <code class="docutils literal"><span class="pre">[soledad-server]</span></code> section:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="22%" />
+<col width="47%" />
+<col width="32%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Option</th>
+<th class="head">Description</th>
+<th class="head">Default value</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>couch_url</td>
+<td>The URL of the CouchDB backend storage.</td>
+<td><code class="docutils literal"><span class="pre">http://localhost:5984</span></code></td>
+</tr>
+<tr class="row-odd"><td>create_cmd</td>
+<td>The shell command to create user databases.</td>
+<td>None</td>
+</tr>
+<tr class="row-even"><td>admin_netrc</td>
+<td>The netrc file to be used for authenticating
+with the CouchDB backend storage.</td>
+<td><code class="docutils literal"><span class="pre">/etc/couchdb/couchdb.netrc</span></code></td>
+</tr>
+<tr class="row-odd"><td>batching</td>
+<td>Whether to use batching capabilities for
+synchronization.</td>
+<td><code class="docutils literal"><span class="pre">true</span></code></td>
+</tr>
+<tr class="row-even"><td>blobs</td>
+<td>Whether to provide the Blobs functionality or
+not.</td>
+<td><code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
+<tr class="row-odd"><td>blobs_path</td>
+<td>The path for blobs storage in the server’s file
+system.</td>
+<td><code class="docutils literal"><span class="pre">/var/lib/soledad/blobs</span></code></td>
+</tr>
+<tr class="row-even"><td>concurrent_blob_writes</td>
+<td>Limit of concurrent blob writes to the
+filesystem.</td>
+<td>50</td>
+</tr>
+<tr class="row-odd"><td>services_tokens_file</td>
+<td>The file containing authentication tokens for
+services provided through the Services API.</td>
+<td><code class="docutils literal"><span class="pre">/etc/soledad/services.tokens</span></code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="running">
+<h3>Running<a class="headerlink" href="#running" title="Permalink to this headline"></a></h3>
+<p>This is written as a Twisted application and intended to be run using the
+twistd command. To start the soledad server, run:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>twistd -n --python /path/to/leap/soledad/server/server.tac
+</pre></div>
+</div>
+<p>An systemd script is included in the <a class="reference external" href="http://deb.leap.se/repository/">Debian packages</a> to make it feasible to start and stop the
+Soledad server service using a standard interface.</p>
+</div>
+<div class="section" id="migrations">
+<h3>Migrations<a class="headerlink" href="#migrations" title="Permalink to this headline"></a></h3>
+<p>Some updates of Soledad need manual intervention for database migration because
+of changes to the storage backend. In all such cases, we will document the
+steps needed for migration in this page.</p>
+<div class="section" id="soledad-server-0-8-to-0-9-couch-database-schema-migration-needed">
+<p><b>Soledad Server 0.8 to 0.9 - Couch Database schema migration needed<a class="headerlink" href="#soledad-server-0-8-to-0-9-couch-database-schema-migration-needed" title="Permalink to this headline"></a></b></p>
+<p>Starting with Soledad Server 0.9.0, the CouchDB database schema was changed to
+improve speed of the server side storage backend. Because of that, this script
+has to be run for all Leap providers that used to provide email using Soledad
+Server &lt; 0.9.0.</p>
+<p>The migration script can be found:</p>
+<ul class="simple">
+<li>In <a class="reference external" href="https://0xacab.org/leap/soledad/tree/master/scripts/migration/0.9">the Soledad repository</a>.</li>
+<li>In <code class="docutils literal"><span class="pre">/usr/share/soledad-server/migration/0.9/</span></code> when the <code class="docutils literal"><span class="pre">soledad-server</span></code> debian package is installed.</li>
+</ul>
+<p>Instructions for migration can be found in the <code class="docutils literal"><span class="pre">README.md</span></code> file. Make sure to read it carefully and backup your data before starting the migration process.</p>
+</div>
+</div>
+</div>
+<span id="document-client"></span><div class="section" id="soledad-client">
+<span id="id1"></span><h2>Soledad Client<a class="headerlink" href="#soledad-client" title="Permalink to this headline"></a></h2>
+<p>The Soledad Client is a Python library aimed to provide access to a document
+store that can be synchronized securelly with other deviced through the Soledad
+Server. Key aspects of Soledad Client include:</p>
+<ul class="simple">
+<li><strong>Encrypted local storage:</strong> All data cached locally is stored in an
+encrypted database.</li>
+<li><strong>Client-side encrypted sync:</strong> Soledad puts very little trust in the
+server by encrypting all data before it is synchronized to the server and
+by limiting ways in which the server can modify the user’s data.</li>
+<li><strong>Document database:</strong> An application using the Soledad client library is
+presented with a document-centric database API for storage and sync.
+Documents may be indexed, searched, and versioned.</li>
+<li><strong>Blobs storage:</strong> The client and server API provide blobs storage, which
+can be used both for data delivery in the server side (i.e. email) and
+payload storage on the client side.</li>
+</ul>
+<div class="section" id="setting-up">
+<h3>Setting-up<a class="headerlink" href="#setting-up" title="Permalink to this headline"></a></h3>
+<p>The following information is needed in order to instantiate a soledad client:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">uuid</span></code>: the user’s uuid.</li>
+<li><code class="docutils literal"><span class="pre">passphrase</span></code>: the user’s passphrase.</li>
+<li><code class="docutils literal"><span class="pre">secrets_path</span></code>: a local path for secrets storage.</li>
+<li><code class="docutils literal"><span class="pre">local_db_path</span></code>: a local path for the documents database.</li>
+<li><code class="docutils literal"><span class="pre">server_url</span></code>: the Soledad Server’s URL.</li>
+<li><code class="docutils literal"><span class="pre">cert_file</span></code>: a local path for the CA certificate.</li>
+<li><code class="docutils literal"><span class="pre">auth_token</span></code>: an authentication token obtained after logging into the
+provider.</li>
+</ul>
+<p>Once all pieces are in place, you can instantiate the client as following:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">leap.soledad.client</span> <span class="kn">import</span> <span class="n">Soledad</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">Soledad</span><span class="p">(</span>
+    <span class="n">uuid</span><span class="p">,</span>
+    <span class="n">passphrase</span><span class="p">,</span>
+    <span class="n">secrets_path</span><span class="o">=</span><span class="n">secrets_path</span><span class="p">,</span>
+    <span class="n">local_db_path</span><span class="o">=</span><span class="n">local_db_path</span><span class="p">,</span>
+    <span class="n">server_url</span><span class="o">=</span><span class="n">server_url</span><span class="p">,</span>
+    <span class="n">cert_file</span><span class="o">=</span><span class="n">cert_file</span><span class="p">,</span>
+    <span class="n">auth_token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="usage-example">
+<h3>Usage example<a class="headerlink" href="#usage-example" title="Permalink to this headline"></a></h3>
+<p>Soledad is written in the <a class="reference external" href="https://twistedmatrix.com/documents/current/core/howto/defer-intro.html">Twisted asynchronous model</a>, so
+you will need to make sure a <a class="reference external" href="http://twistedmatrix.com/documents/current/core/howto/reactor-basics.html">reactor</a>
+is running.</p>
+<p>An example of usage of Soledad Client for creating a document and Creation of
+a document and synchronization is done as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet</span> <span class="kn">import</span> <span class="n">defer</span><span class="p">,</span> <span class="n">reactor</span>
+
+<span class="nd">@defer.inlineCallbacks</span>
+<span class="k">def</span> <span class="nf">client_usage_example</span><span class="p">():</span>
+
+    <span class="c1"># create a document and sync it with the server</span>
+    <span class="k">yield</span> <span class="n">client</span><span class="o">.</span><span class="n">create_doc</span><span class="p">({</span><span class="s1">&#39;my&#39;</span><span class="p">:</span> <span class="s1">&#39;doc&#39;</span><span class="p">},</span> <span class="n">doc_id</span><span class="o">=</span><span class="s1">&#39;some-id&#39;</span><span class="p">)</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">client</span><span class="o">.</span><span class="n">get_doc</span><span class="p">(</span><span class="s1">&#39;some-id&#39;</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">client</span><span class="o">.</span><span class="n">sync</span><span class="p">()</span>
+
+    <span class="c1"># modify the document and sync again</span>
+    <span class="n">doc</span><span class="o">.</span><span class="n">content</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;new&#39;</span><span class="p">:</span> <span class="s1">&#39;content&#39;</span><span class="p">}</span>
+    <span class="k">yield</span> <span class="n">client</span><span class="o">.</span><span class="n">put_doc</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">client</span><span class="o">.</span><span class="n">sync</span><span class="p">()</span>
+
+<span class="n">d</span> <span class="o">=</span> <span class="n">client_usage_example</span><span class="p">()</span>
+<span class="n">d</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="k">lambda</span> <span class="n">_</span><span class="p">:</span> <span class="n">reactor</span><span class="o">.</span><span class="n">stop</span><span class="p">())</span>
+
+<span class="n">reactor</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<span id="document-reference"></span><div class="section" id="reference">
+<h2>Reference<a class="headerlink" href="#reference" title="Permalink to this headline"></a></h2>
+<p>This page gathers reference documentation to understanding the internals of Soledad.</p>
+<div class="toctree-wrapper compound">
+<span id="document-reference/environment_variables"></span><div class="section" id="environment-variables">
+<h3>Environment Variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline"></a></h3>
+<p>Some environment variables affect the behaviour of Soledad:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="38%" />
+<col width="19%" />
+<col width="42%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">variable</th>
+<th class="head">affects</th>
+<th class="head">description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">SOLEDAD_HTTP_PERSIST</span></code></td>
+<td>client</td>
+<td>persist HTTP connections.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">SOLEDAD_USE_PYTHON_LOGGING</span></code></td>
+<td>client / server</td>
+<td>use python logging instead of
+twisted’s logger.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">SOLEDAD_LOG_TO_STDOUT</span></code></td>
+<td>client / server</td>
+<td>log to standard output.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">SOLEDAD_SERVER_CONFIG_FILE</span></code></td>
+<td>server</td>
+<td>use this configuration file
+instead of the default one.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">LOCAL_SERVICES_PORT</span></code></td>
+<td>server</td>
+<td>which port to use for local
+TCP services.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">HTTPS_PORT</span></code></td>
+<td>server</td>
+<td>which port to use for public
+HTTPS services.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<span id="document-reference/storage-secrets"></span><div class="section" id="storage-secrets">
+<span id="id1"></span><h3>Storage secrets<a class="headerlink" href="#storage-secrets" title="Permalink to this headline"></a></h3>
+<p>Soledad randomly generates secrets that are used to derive encryption keys for
+protecting all data that is stored in the server and in the local storage.
+These secrets are themselves encrypted using a key derived from the user’s
+passphrase, and saved locally on disk.</p>
+<p>The encrypted secrets are stored in a local file in the user’s in a JSON
+structure that looks like this:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="s1">&#39;kdf&#39;</span><span class="p">:</span> <span class="s1">&#39;scrypt&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;kdf_salt&#39;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">base64</span> <span class="n">encoded</span> <span class="n">salt</span><span class="o">&gt;</span><span class="p">,</span>
+    <span class="s1">&#39;kdf_length&#39;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">the</span> <span class="n">length</span> <span class="n">of</span> <span class="n">the</span> <span class="n">derived</span> <span class="n">key</span><span class="o">&gt;</span><span class="p">,</span>
+    <span class="s1">&#39;cipher&#39;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">a</span> <span class="n">code</span> <span class="n">indicating</span> <span class="n">the</span> <span class="n">cipher</span> <span class="n">used</span> <span class="k">for</span> <span class="n">encryption</span><span class="o">&gt;</span><span class="p">,</span>
+    <span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">the</span> <span class="n">length</span> <span class="n">of</span> <span class="n">the</span> <span class="n">plaintext</span><span class="o">&gt;</span><span class="p">,</span>
+    <span class="s1">&#39;iv&#39;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">the</span> <span class="n">initialization</span> <span class="n">vector</span><span class="o">&gt;</span><span class="p">,</span>
+    <span class="s1">&#39;secrets&#39;</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">base64</span> <span class="n">encoding</span> <span class="n">of</span> <span class="n">ciphertext</span><span class="o">&gt;</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>When a client application first wants to use Soledad, it must provide the
+user’s password to unlock the storage secrets. Currently, the storage secrets
+are shared among all devices with access to a particular user’s Soledad
+database.</p>
+<p>The storage secrets are currently backed up in the provider (encrypted with the
+user’s passphrase) for the case where the user looses or resets her device (see
+<a class="reference internal" href="index.html#shared-database"><span class="std std-ref">Shared database</span></a> for more information). There are plans to make this
+feature optional, allowing for less trust in the provider while increasing the
+responsibility of the user.</p>
+<p>If the user looses her passphrase, there is currently no way of recovering her
+data.</p>
+</div>
+<span id="document-reference/server-database"></span><div class="section" id="server-side-databases">
+<h3>Server-side databases<a class="headerlink" href="#server-side-databases" title="Permalink to this headline"></a></h3>
+<p>Soledad Server works with one database per user and one shared database in
+which user’s encrypted secrets might be stored.</p>
+<div class="section" id="user-databases">
+<p><b>User databases<a class="headerlink" href="#user-databases" title="Permalink to this headline"></a></b></p>
+<p>User databases in the server are named ‘user-&lt;uuid&gt;’ and Soledad Client may
+perform synchronization between its local replicas and the user’s database in
+the server. Authorization for creating, updating, deleting and retrieving
+information about the user database as well as performing synchronization is
+handled by the <cite>leap.soledad.server.auth</cite> module.</p>
+</div>
+<div class="section" id="shared-database">
+<span id="id1"></span><p><b>Shared database<a class="headerlink" href="#shared-database" title="Permalink to this headline"></a></b></p>
+<p>Each user may store password-encrypted recovery data in the shared database.</p>
+<p>Recovery documents are stored in the database without any information that
+may identify the user. In order to achieve this, the doc_id of recovery
+documents are obtained as a hash of the user’s uid and the user’s password.
+User’s must have a valid token to interact with recovery documents, but the
+server does not perform further authentication because it has no way to know
+which recovery document belongs to each user.</p>
+<p>This has some implications:</p>
+<ul class="simple">
+<li>The security of the recovery document doc_id, and thus of access to the
+recovery document (encrypted) content, as well as tampering with the
+stored data, all rely on the difficulty of obtaining the user’s password
+(supposing the user’s uid is somewhat public) and the security of the hash
+function used to calculate the doc_id.</li>
+<li>The security of the content of a recovery document relies on the
+difficulty of obtaining the user’s password.</li>
+<li>If the user looses his/her password, he/she will not be able to obtain the
+recovery document.</li>
+<li>Because of the above, it is recommended that recovery documents expire
+(not implemented yet) to prevent excess storage.</li>
+</ul>
+<p>The authorization for creating, updating, deleting and retrieving recovery
+documents on the shared database is handled by <cite>leap.soledad.server.auth</cite>
+module.</p>
+</div>
+</div>
+<span id="document-reference/client-database"></span><div class="section" id="client-side-databases">
+<span id="client-databases"></span><h3>Client-side databases<a class="headerlink" href="#client-side-databases" title="Permalink to this headline"></a></h3>
+<p>Soledad Client uses <a class="reference external" href="https://www.zetetic.net/sqlcipher/">SQLCipher</a> for
+storing data. The symmetric key used to unlock databases is chosen randomly and
+stored encrypted with the user’s passphrase (see <a class="reference internal" href="index.html#storage-secrets"><span class="std std-ref">Storage secrets</span></a> for
+more details).</p>
+<p><a class="reference internal" href="index.html#document-encryption"><span class="std std-ref">Documents</span></a> and <a class="reference internal" href="index.html#blobs"><span class="std std-ref">blobs</span></a> are stored in
+different databases protected with the same symmetric secret.</p>
+</div>
+<span id="document-reference/document-encryption"></span><div class="section" id="document-encryption">
+<span id="id1"></span><h3>Document encryption<a class="headerlink" href="#document-encryption" title="Permalink to this headline"></a></h3>
+<p>Before a JSON document is sent to the server, Soledad Client symmetrically
+encrypts it using AES-256 operating in GCM mode. That mode of encryption
+automatically calculates a MAC during block encryption, and so gives Soledad
+the ability to encrypt on the fly while transmitting data to the server.
+Similarly, when downloading a symmetrically encrypted document from the server,
+Soledad Client will decrypt it and verify the MAC tag in the end before
+accepting the document.</p>
+<p>Soledad Client will allways do <em>symmetric encryption</em>. Server-side applications
+can define their own encryption schemes and Soledad Client will not try to
+decrypt in those cases. The symmetric key used to encrypt a document is derived
+from the storage secret and the document id, with HMAC using SHA-256 as a hash
+function.</p>
+<p>The calculation of the MAC also takes into account the document revision to
+avoid tampering. Soledad Client will refuse to accept a document if it does not
+include a higher revision. In this way, the server cannot rollback a document
+to an older revision. The server also cannot delete a document, since document
+deletion is handled by removing the document contents, marking it as deleted,
+and incrementing the revision. However, a server can withhold from the client
+new documents and new revisions of a document (including withholding document
+deletion).</p>
+</div>
+<span id="document-reference/document-sync"></span><div class="section" id="document-synchronization">
+<h3>Document synchronization<a class="headerlink" href="#document-synchronization" title="Permalink to this headline"></a></h3>
+<p>Soledad follows <a class="reference external" href="https://pythonhosted.org/u1db/conflicts.html">the U1DB synchronization protocol</a> with some modifications:</p>
+<ul class="simple">
+<li>A synchronization always happens between the Soledad Server and one Soledad
+Client. Many clients can synchronize with the same server.</li>
+<li>Soledad Client <a class="reference internal" href="index.html#document-encryption"><span class="std std-ref">always encrypts</span></a> before sending
+data to the server.</li>
+<li>Soledad Client refuses to receive a document if it is encrypted and the MAC
+is incorrect.</li>
+<li>Soledad Server doesn’t try to decide about document convergence based on the
+document’s content, because the content is client-encrypted.</li>
+</ul>
+<div class="section" id="synchronization-protocol">
+<p><b>Synchronization protocol<a class="headerlink" href="#synchronization-protocol" title="Permalink to this headline"></a></b></p>
+<p>Synchronization between the Soledad Server and one Soledad Client consists of
+the following steps:</p>
+<ol class="arabic simple">
+<li>The client asks the server for the information it has stored about the last
+time they have synchronized (if ever).</li>
+<li>The client validates that its information regarding the last synchronization
+is consistent with the server’s information, and raises an error if not.
+(This could happen for instance if one of the replicas was lost and restored
+from backup, or if a user inadvertently tries to synchronize a copied
+database.)</li>
+<li>The client generates a list of changes since the last change the server
+knows of.</li>
+<li>The client checks what the last change is it knows about on the server.</li>
+<li>If there have been no changes on either side that the other side has not
+seen, the synchronization stops here.</li>
+<li>The client encrypts and sends the changed documents to the server, along
+with what the latest change is that it knows about on the server.</li>
+<li>The server processes the changed documents, and records the client’s latest
+change.</li>
+<li>The server responds with the documents that have changes that the client
+does not yet know about.</li>
+<li>The client decrypts and processes the changed documents, and records the
+server’s latest change.</li>
+<li>If the client has seen no changes unrelated to the synchronization during
+this whole process, it now sends the server what its latest change is, so
+that the next synchronization does not have to consider changes that were
+the result of this one.</li>
+</ol>
+</div>
+<div class="section" id="synchronization-metadata">
+<p><b>Synchronization metadata<a class="headerlink" href="#synchronization-metadata" title="Permalink to this headline"></a></b></p>
+<p>The synchronization information stored on each database replica consists of:</p>
+<ul class="simple">
+<li>The replica id of the other replica. (Which should be globally unique
+identifier to distinguish database replicas from one another.)</li>
+<li>The last known generation and transaction id of the other replica.</li>
+<li>The generation and transaction id of this replica at the time of the most
+recent succesfully completed synchronization with the other replica.</li>
+</ul>
+</div>
+<div class="section" id="transactions">
+<p><b>Transactions<a class="headerlink" href="#transactions" title="Permalink to this headline"></a></b></p>
+<p>Any change to any document in a database constitutes a transaction. Each
+transaction increases the database generation by 1, and is assigned
+a transaction id, which is meant to be a unique random string paired with each
+generation.</p>
+<p>The transaction id can be used to detect the case where replica A and replica
+B have previously synchronized at generation N, and subsequently replica B is
+somehow reverted to an earlier generation (say, a restore from backup, or
+somebody made a copy of the database file of replica B at generation &lt; N, and
+tries to synchronize that), and then new changes are made to it. It could end
+up at generation N again, but with completely different data.</p>
+<p>Having random unique transaction ids will allow replica A to detect this
+situation, and refuse to synchronize to prevent data loss. (Lesson to be
+learned from this: do not copy databases around, that is what synchronization
+is for.)</p>
+</div>
+</div>
+<span id="document-reference/auth"></span><div class="section" id="authentication">
+<span id="id1"></span><h3>Authentication<a class="headerlink" href="#authentication" title="Permalink to this headline"></a></h3>
+<p>Authentication with the Soledad server is made using <a class="reference external" href="https://twisted.readthedocs.io/en/latest/core/howto/cred.html">Twisted’s Pluggable
+Authentication system</a>. The
+validation of credentials is performed by verifying a token provided by the
+client.</p>
+<p>There are currently two distinct authenticated entry points:</p>
+<ul class="simple">
+<li>A public TLS encrypted <strong>Users API</strong>, providing the <em>Synchronization</em> and
+<a class="reference internal" href="index.html#blobs"><span class="std std-ref">Blobs</span></a> services, verified against the Leap Platform
+<code class="docutils literal"><span class="pre">tokens</span></code> database.</li>
+<li>A local plaintext <strong>Services API</strong>, currently providing only the delivery
+part of the <em>Incoming</em> service, authenticated against tokens defined in
+a file specified on the server configuration file (see the
+<a class="reference internal" href="#services-tokens-file"><span class="std std-ref">Services API tokens file</span></a> section).</li>
+</ul>
+<div class="section" id="authorization-header">
+<p><b>Authorization header<a class="headerlink" href="#authorization-header" title="Permalink to this headline"></a></b></p>
+<p>The client has to provide a token encoded in an HTTP auth header, as in:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Authorization</span><span class="p">:</span> <span class="n">Token</span> <span class="o">&lt;</span><span class="n">base64</span><span class="o">-</span><span class="n">encoded</span> <span class="n">uuid</span><span class="p">:</span><span class="n">token</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>If no token is provided, the request is considered an “anonymous” request.
+Anonymous requests can only access <cite>GET /</cite>, which returns information about the
+server (as the version of the server and runtime configuration options).</p>
+</div>
+<div class="section" id="services-api-tokens-file">
+<span id="services-tokens-file"></span><p><b>Services API tokens file<a class="headerlink" href="#services-api-tokens-file" title="Permalink to this headline"></a></b></p>
+<p>Credentials for services accessible through the local Services API entrypoint
+can be added into a file, one in each line with the format
+<code class="docutils literal"><span class="pre">servicename:token</span></code>, like this:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">incoming</span><span class="p">:</span><span class="n">Zm9yYSB0ZW1lciEK</span>
+</pre></div>
+</div>
+<p>By default, Soledad Server will look for the tokens file in
+<code class="docutils literal"><span class="pre">/etc/soledad/services.tokens</span></code> but that is configurable (see
+<a class="reference internal" href="index.html#server-config-file"><span class="std std-ref">Configuring</span></a> for more information).</p>
+<p>Currently, the only special credential provided is for the <em>Incoming</em> service.</p>
+</div>
+<div class="section" id="implementation">
+<p><b>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline"></a></b></p>
+<p>Soledad Server package includes a systemd service file that spawns a <code class="docutils literal"><span class="pre">twistd</span></code>
+daemon that loads a <a class="reference external" href="https://twistedmatrix.com/documents/12.2.0/core/howto/application.html#auto5">.tac file</a>.
+When the server is started, two services are spawned:</p>
+<ul class="simple">
+<li>A local entrypoint for services (serving on localhost only).</li>
+<li>A public entrypoint for users (serving on public IP).</li>
+<li>Localhost and public IP ports are configurable. Default is 2424 for public IP
+and 2525 for localhost.</li>
+</ul>
+<div class="highlight-none"><div class="highlight"><pre><span></span>.------------------------------------------------------.
+|                    soledad-server                    |
+|      (twisted.application.service.Application)       |
+&#39;------------------------------------------------------&#39;
+   |                                                |
+.--------------.                      .----------------.
+| 0.0.0.0:2424 |                      | 127.0.0.1:2525 |
+|     (TLS)    |                      |     (TCP)      |
+&#39;--------------&#39;                      &#39;----------------&#39;
+   |                                                |
+.----------------.             .----------------------.
+| Auth for users |             |  Auth for services   |
+|  (UsersRealm)  |             | (LocalServicesRealm) |
+&#39;----------------&#39;             &#39;----------------------&#39;
+   |                                                |
+.------------------.        .-------------------------.
+|    Users API     |        |      Services API       |
+| (PublicResource) |        |     (LocalResource)     |
+&#39;------------------&#39;        &#39;-------------------------&#39;
+   |  .-------.                .-----------------.  |
+   &#39;-&gt;| /sync |                |    /incoming    |&lt;-&#39;
+   |  &#39;-------&#39;                | (delivery only) |
+   |  .--------.               &#39;-----------------&#39;
+   &#39;-&gt;| /blobs |
+      &#39;--------
+</pre></div>
+</div>
+</div>
+</div>
+<span id="document-reference/blobs"></span><div class="section" id="blobs">
+<span id="id1"></span><h3>Blobs<a class="headerlink" href="#blobs" title="Permalink to this headline"></a></h3>
+<p>The first versions of Soledad used to store all data as JSON documents, which
+means that binary data was also being treated as strings. This has many
+drawbacks, as increased memory usage and difficulties to do transfer and crypto
+in a proper binary pipeline.</p>
+<p>Starting with version <strong>0.10.0</strong>, Soledad now has a proper blob infrastructure
+that decouples payloads from metadata both in storage and in the
+synchronization process.</p>
+<div class="section" id="server-side">
+<p><b>Server-side<a class="headerlink" href="#server-side" title="Permalink to this headline"></a></b></p>
+<p>Soledad Server provides two different REST APIs for interacting with blobs:</p>
+<ul class="simple">
+<li>A public <strong>HTTP Blobs API</strong>, providing the <em>Blobs</em> service for Soledad Client
+(i.e. actual users of the infrastructure).</li>
+<li>A local <strong>HTTP Incoming Box API</strong>, providing the delivery part of the
+<a class="reference internal" href="index.html#incoming-box"><span class="std std-ref">Incoming Box</span></a> service, currently used for the MX mail delivery.</li>
+</ul>
+<p>Authentication is handled differently for each of the endpoints, see
+<a class="reference internal" href="index.html#authentication"><span class="std std-ref">Authentication</span></a> for more details.</p>
+<div class="section" id="http-blobs-api">
+<span id="id2"></span><p><b>HTTP Blobs API<a class="headerlink" href="#http-blobs-api" title="Permalink to this headline"></a></b></p>
+<p>The public endpoint provides the following REST API for interacting with the
+<em>Blobs</em> service:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="24%" />
+<col width="9%" />
+<col width="29%" />
+<col width="39%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">path</th>
+<th class="head">method</th>
+<th class="head">action</th>
+<th class="head">accepted query string fields</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">/blobs/{uuid}</span></code></td>
+<td><code class="docutils literal"><span class="pre">GET</span></code></td>
+<td>Get a list of blobs. filtered by
+a flag.</td>
+<td><code class="docutils literal"><span class="pre">namespace</span></code>, <code class="docutils literal"><span class="pre">filter_flag</span></code>, <code class="docutils literal"><span class="pre">order_by</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">/blobs/{uuid}/{blob_id}</span></code></td>
+<td><code class="docutils literal"><span class="pre">GET</span></code></td>
+<td>Get the contents of a blob.</td>
+<td><code class="docutils literal"><span class="pre">namespace</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">/blobs/{uuid}/{blob_id}</span></code></td>
+<td><code class="docutils literal"><span class="pre">PUT</span></code></td>
+<td>Create a blob. The content of the
+blob should be sent in the body
+of the request.</td>
+<td><code class="docutils literal"><span class="pre">namespace</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">/blobs/{uuid}/{blob_id}</span></code></td>
+<td><code class="docutils literal"><span class="pre">POST</span></code></td>
+<td>Set the flags for a blob. A list
+of flags should be sent in the
+body of the request.</td>
+<td><code class="docutils literal"><span class="pre">namespace</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">/blobs/{uuid}/{blob_id}</span></code></td>
+<td><code class="docutils literal"><span class="pre">DELETE</span></code></td>
+<td>Delete a blob.</td>
+<td><code class="docutils literal"><span class="pre">namespace</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>The Blobs service supports <em>namespaces</em>. All requests can be modified by the
+<code class="docutils literal"><span class="pre">namespace</span></code> query string parameter, and the results will be restricted to
+a certain namespace. When no namespace explicitelly given, the <code class="docutils literal"><span class="pre">default</span></code>
+namespace is used.</p>
+<p>When listing blobs, the results can be filtered by flag and/or ordered by date
+using the <code class="docutils literal"><span class="pre">filter_flag</span></code> and <code class="docutils literal"><span class="pre">order_by</span></code> query string parameters. The
+possible values for <code class="docutils literal"><span class="pre">order_by</span></code> are <code class="docutils literal"><span class="pre">date</span></code> or <code class="docutils literal"><span class="pre">+date</span></code> for increasing
+order, or <code class="docutils literal"><span class="pre">-date</span></code> for decreasing order.</p>
+</div>
+<div class="section" id="http-incoming-box-api">
+<p><b>HTTP Incoming Box API<a class="headerlink" href="#http-incoming-box-api" title="Permalink to this headline"></a></b></p>
+<p>The local endpoint provides the following REST API for interacting with the
+<a class="reference internal" href="index.html#incoming-box"><span class="std std-ref">Incoming Box</span></a> service.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="23%" />
+<col width="8%" />
+<col width="69%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">path</th>
+<th class="head">method</th>
+<th class="head">action</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">/incoming/{uuid}/{blob_id}</span></code></td>
+<td><code class="docutils literal"><span class="pre">PUT</span></code></td>
+<td>Create an incoming blob. The content of the blob should be sent in the body of the request.</td>
+</tr>
+</tbody>
+</table>
+<p>All blobs created using this API are inserted under the namespace <code class="docutils literal"><span class="pre">MX</span></code> and
+flagged as <code class="docutils literal"><span class="pre">PENDING</span></code>.</p>
+</div>
+<div class="section" id="filesystem-backend">
+<span id="id3"></span><p><b>Filesystem backend<a class="headerlink" href="#filesystem-backend" title="Permalink to this headline"></a></b></p>
+<p>On the server side, all blobs are currently stored in the filesystem, under
+<code class="docutils literal"><span class="pre">/var/lib/soledad/blobs</span></code> by default. Blobs are split in subdirectories
+according to the user’s uuid, the namespace, and the 3-letter and 6-letter
+prefixes of the blobs uuid to prevent too many files in the same directory.
+A second file with the extension <code class="docutils literal"><span class="pre">.flags</span></code> stores the flags for a blob.</p>
+<p>As an example, a <code class="docutils literal"><span class="pre">PUT</span></code> request to
+<code class="docutils literal"><span class="pre">/incoming/68625dcb68dab741adf29c7159ccff96/c56da69b25a9a11ec2f408a559ccffc6</span></code>
+would result in the following:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>/var/lib/soledad/blobs
+└── 68625dcb68dab741adf29c7159ccff96
+    └── MX
+        └── c56
+            └── c56da6
+                ├── c56da69b25a9a11ec2f408a559ccffc6
+                └── c56da69b25a9a11ec2f408a559ccffc6.flags
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="client-side">
+<p><b>Client-side<a class="headerlink" href="#client-side" title="Permalink to this headline"></a></b></p>
+<p>On the client-side, blobs can be managed using the BlobManager API.  The
+BlobManager is responsible for managing storage of blobs both in local and
+remote storages</p>
+<p>All data is stored locally in the <code class="docutils literal"><span class="pre">blobs</span></code> table of a SQLCipher database
+called <code class="docutils literal"><span class="pre">{uuid}_blobs.db</span></code> that lies in the same directory as the Soledad
+Client’s JSON documents database. Both databases are encrypted with the same
+symmetric secret. All actions performed locally are mirrored remotelly using
+the <a class="reference internal" href="#http-blobs-api"><span class="std std-ref">HTTP Blobs API</span></a>.</p>
+<p>The BlobManager supports <em>namespaces</em> and <em>flags</em> and can list local and remote
+blobs, possibly filtering by flags and ordering by date (increasingly or
+decreasingly). It has helper methods to send or fetch all missing blobs, thus
+aiding in synchronization of local and remote data.</p>
+<p>When uploading, the content of the blob is encrypted with a symmetric secret
+prior to being sent to the server. When downloading, the content of the blob is
+decrypted accordingly.</p>
+</div>
+</div>
+<span id="document-reference/incoming_box"></span><div class="section" id="incoming-box">
+<span id="id1"></span><h3>Incoming Box<a class="headerlink" href="#incoming-box" title="Permalink to this headline"></a></h3>
+<p><em>A mechanism for Trusted Applications to write encrypted data for a given user into the Soledad Server, which will sync it to the client to be processed afterwards.</em></p>
+<ul class="simple">
+<li><strong>Version</strong>: 0.2.0</li>
+<li><strong>Date</strong>: 27 jun 2017</li>
+<li><strong>Authors</strong>: kali, drebs, vshyba</li>
+</ul>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#overview" id="id2">Overview</a></li>
+<li><a class="reference internal" href="#design-goal" id="id3">Design Goal</a></li>
+<li><a class="reference internal" href="#features" id="id4">Features</a></li>
+<li><a class="reference internal" href="#conventions" id="id5">Conventions</a></li>
+<li><a class="reference internal" href="#terminology" id="id6">Terminology</a></li>
+<li><a class="reference internal" href="#components" id="id7">Components</a></li>
+<li><a class="reference internal" href="#the-user-experience" id="id8">The User Experience</a></li>
+<li><a class="reference internal" href="#writing-data-into-the-incoming-box" id="id9">Writing Data Into The Incoming Box</a></li>
+<li><a class="reference internal" href="#authentication" id="id10">Authentication</a></li>
+<li><a class="reference internal" href="#listing-all-incoming-messages" id="id11">Listing All Incoming Messages</a></li>
+<li><a class="reference internal" href="#processing-incoming-messages" id="id12">Processing Incoming Messages</a></li>
+<li><a class="reference internal" href="#marking-a-message-as-failed" id="id13">Marking a Message as Failed</a></li>
+<li><a class="reference internal" href="#deleting-incoming-messagges" id="id14">Deleting Incoming Messagges</a></li>
+<li><a class="reference internal" href="#implementation-details" id="id15">Implementation Details</a><ul>
+<li><a class="reference internal" href="#server-blob-backend" id="id16">Server Blob Backend</a><ul>
+<li><a class="reference internal" href="#preffix-namespaces" id="id17">Preffix Namespaces</a></li>
+<li><a class="reference internal" href="#list-commands" id="id18">LIST commands</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#client-side-processing" id="id19">Client side Processing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#future-features" id="id20">Future Features</a><ul>
+<li><a class="reference internal" href="#writing-data-when-user-quota-is-exceeeded" id="id21">Writing Data When User Quota is Exceeeded</a></li>
+<li><a class="reference internal" href="#list-qualifiers" id="id22">LIST QUALIFIERS</a><ul>
+<li><a class="reference internal" href="#pagination" id="id23">PAGINATION</a></li>
+<li><a class="reference internal" href="#skip-by-size" id="id24">SKIP-BY-SIZE</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="overview">
+<p><b><a class="toc-backref" href="#id2">Overview</a><a class="headerlink" href="#overview" title="Permalink to this headline"></a></b></p>
+<p>The <code class="docutils literal"><span class="pre">Incoming</span> <span class="pre">Box</span></code> is a new feature of Soledad, (from 0.10 forward), that aim at improving the mechanism by which external Trusted Applications can write data that will be delievered to a user’s database in the server side, from where it will be further processed by the Soledad Client. This processing includes decrypting the payload, since the incoming data is expected to be encrypted by the Trusted Application.</p>
+</div>
+<div class="section" id="design-goal">
+<p><b><a class="toc-backref" href="#id3">Design Goal</a><a class="headerlink" href="#design-goal" title="Permalink to this headline"></a></b></p>
+<p>Use the particular story about MX delivery to guide the design of a general mechanism that makes sense in the context of Soledad as a generic Encrypted Database Solution.
+The final solution should still be able to be the backend for different types of applications, without introducing abstractions that are too tied to the encrypted email use case.</p>
+</div>
+<div class="section" id="features">
+<p><b><a class="toc-backref" href="#id4">Features</a><a class="headerlink" href="#features" title="Permalink to this headline"></a></b></p>
+<ol class="arabic simple">
+<li>Deliver data (expected to be encrypted with a public-key mechanism) to the Soledad Server, so that it is written into the data space for a particular user.</li>
+<li>Provide a mechanism by which Soledad Client, acting on behalf of an user, can download the data, process it in any needed way, and eventually store it again in the conventional main storage that Soledad provides. Since the data is expected to be encrypted by the delivery party, the client-side processing includes any decryption step if needed.</li>
+<li>Allow to purge a document that has been correctly processed</li>
+<li>Allow to mark a document that has failed to be decrypted, to avoid trying to decrypt it in every processing loop</li>
+</ol>
+</div>
+<div class="section" id="conventions">
+<p><b><a class="toc-backref" href="#id5">Conventions</a><a class="headerlink" href="#conventions" title="Permalink to this headline"></a></b></p>
+<p>The key words “MUST”, “MUST NOT”, “REQUIRED”, “SHALL”, “SHALL
+NOT”, “SHOULD”, “SHOULD NOT”, “RECOMMENDED”,  “MAY”, and
+“OPTIONAL” in this document are to be interpreted as described in
+<a class="reference external" href="https://www.ietf.org/rfc/rfc2119.txt">RFC 2119</a>.</p>
+</div>
+<div class="section" id="terminology">
+<p><b><a class="toc-backref" href="#id6">Terminology</a><a class="headerlink" href="#terminology" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">Blob</span></code> refers to an encrypted payload that is stored by soledad server as-is. It is assumed that the blob was end-to-end encrypted by an external component before reaching the server. (See the <a class="reference internal" href="index.html#blobs"><span class="std std-ref">Blobs</span></a> for more detail)</li>
+<li>A <code class="docutils literal"><span class="pre">BlobsBackend</span></code> implementation is a particular backend setup by the Soledad Server that stores all the blobs that a given user owns. For now, only a filesystem backend is provided.</li>
+<li>An <code class="docutils literal"><span class="pre">Incoming</span> <span class="pre">Message</span></code> makes reference to the representation of an abstract entity that matches exactly one message item, no matter how it is stored (ie, docs vs. blobs, single blob vs chunked, etc). It can represent one Email Message, one URL, an uploaded File, etc. For the purpose of the email use case, an Incoming Message refers to the encrypted message that MX has delivered to the incoming endpoint, which is pgp-encrypted, and can have been further obfuscated.</li>
+<li>By <code class="docutils literal"><span class="pre">Message</span> <span class="pre">Processing</span></code> we understand the sequence of downloading an incoming message, decrypting it, transform it in any needed way, and deleting the original incoming message.</li>
+<li>An <code class="docutils literal"><span class="pre">Incoming</span> <span class="pre">Box</span></code> is a subset of the Blobs stored for an user, together with the mechanisms that provide semantics to store, list, fetch and process incoming message data chronologically.</li>
+</ul>
+</div>
+<div class="section" id="components">
+<p><b><a class="toc-backref" href="#id7">Components</a><a class="headerlink" href="#components" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Soledad Server is the particular implementation that runs in the server (the
+twisted implementation is the only one to the moment). This exposes several
+endpoints (documents synchronization, blob storage, incoming message box).</li>
+<li>BlobsBackend is a particular implementation of the IBlobsBackend interface,
+such as FilesystemBlobsBackend, that the server has been configured to use.</li>
+<li>Soledad Client is the particular client that runs in different desktop
+replicas in the u1db sense (the twisted implementation is the only one to the
+moment). It executes a sync periodically, that syncs all metadata docs
+(soledad l2db json documents), and then downloads the blobs on demand. The
+blobs that need to be synced are both the encrypted blobs that are linked from
+metadata docs, and in this case the blobs stored in the space for a given
+Incoming Box.</li>
+<li>BlobsManager is the component that orchestrates the uploads/downloads and
+storage in the client side. The client storage backend currently is SQLCipher,
+using the BLOB type.</li>
+<li>A Trusted Application is any application that is authorized to write data into
+the user incoming box. Initially, LEAP’s Encrypting Remailer Proxy (MX, for
+short) is going to be the main trusted application that will drive the
+development of the Incoming Box.</li>
+<li>Client Trusted Application Consumer is any implementation of Soledad’s client
+IIncomingBoxConsumer, which is the interface that the client counterpart of
+the Trusted Application needs to implement in order to receive messages. It
+provides implementation for processing and saving Incoming Messages. In the
+encrypted email case, this component is the Incoming Mail Service in Bitmask
+Mail.</li>
+</ul>
+</div>
+<div class="section" id="the-user-experience">
+<p><b><a class="toc-backref" href="#id8">The User Experience</a><a class="headerlink" href="#the-user-experience" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>From the end user perspective (ie, the user of Bitmask Mail in this case),
+the behaviour of the Incoming Box client in Soledad is completely
+transparent.  Periodically, Soledad will call the Client Trusted Application
+Consumer with new “messages” of any particular type backed by the Soledad
+Client Storage, without any other intervention that introducing the master
+passphrase.</li>
+<li>From the client API perspective (considering the user is a Client Trusted
+Application developer), all it needs to do is to implement
+<code class="docutils literal"><span class="pre">IIncomingBoxConsumer</span></code> interface and register this new consumer on Soledad
+API, telling the desired namespace it wants to consume messages from.
+Soledad will then take care of calling the consumer back for processing and
+saving of Incoming Messages.</li>
+</ul>
+</div>
+<div class="section" id="writing-data-into-the-incoming-box">
+<p><b><a class="toc-backref" href="#id9">Writing Data Into The Incoming Box</a><a class="headerlink" href="#writing-data-into-the-incoming-box" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Any payload MUST arrive already encrypted to the endpoint of the Incoming Box.
+Soledad Server, at version 1 of this spec, will not add any encryption to the
+payloads.</li>
+<li>The details of the encryption scheme used by the Trusted Application to
+encrypt the delivered payload (MX in this case) MUST be shared with the
+domain-specific application that processes the incoming message on the client
+side (Incoming Mail Service in Bitmask Mail, in this case). This means that
+the encryption schema MUST be communicated to the Incoming Box API in the
+moment of the delivery.</li>
+<li>Incoming Boxes MUST NOT be writeable by any other user or any external
+applications.</li>
+</ul>
+</div>
+<div class="section" id="authentication">
+<p><b><a class="toc-backref" href="#id10">Authentication</a><a class="headerlink" href="#authentication" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>The Trusted Application and the Soledad Server exposing the Incoming Box
+endpoint MUST share a secret, that is written into the configuration files of
+both services.</li>
+<li>The Incoming Box MUST NOT be accessible as a public service from the outside.</li>
+</ul>
+</div>
+<div class="section" id="listing-all-incoming-messages">
+<p><b><a class="toc-backref" href="#id11">Listing All Incoming Messages</a><a class="headerlink" href="#listing-all-incoming-messages" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Soledad server will list all the messages in the Incoming Box every time that a client requests it.</li>
+<li>The server MUST return the number of pending messages.</li>
+<li>The server SHOULD skip messages from the returned set beyond a given size limit, if the client requests it so.</li>
+<li>The server MAY allow pagination.</li>
+</ul>
+</div>
+<div class="section" id="processing-incoming-messages">
+<p><b><a class="toc-backref" href="#id12">Processing Incoming Messages</a><a class="headerlink" href="#processing-incoming-messages" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>The Blobs containing the Incoming Messages need the capability to be marked
+as in one of the following states: PENDING, PROCESSING, PROCESSED, FAILED.</li>
+<li>The default state for a new message in the Incoming Box is PENDING.</li>
+<li>Before delivering a Message to a client for processing, the server MUST mark
+the blob that contains it as PROCESSING, reserving the message for this
+client so other replicas don’t try to repeat the processing.</li>
+<li>The server MAY expire the PROCESSING flag if the defined PROCESSING_THRESHOLD
+is passed, to avoid data left unusable by stalled clients.</li>
+<li>A message marked as PROCESSING MUST only be marked as PROCESSED by the server
+when it receives a confirmation by the replica that initiated the download
+request. This confirmation signals that the message is ready to be deleted.</li>
+<li>A Client MUST request to the server to mark an incoming message as PROCESSED
+only when there are guarantees that the incoming message has been processed
+without errors, and the parts resulting of its processing are acknowleged to
+have been uploaded successfully to the central replica in the server.</li>
+</ul>
+</div>
+<div class="section" id="marking-a-message-as-failed">
+<p><b><a class="toc-backref" href="#id13">Marking a Message as Failed</a><a class="headerlink" href="#marking-a-message-as-failed" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>A Soledad Client MUST be able to mark a given message as FAILED. This covers
+the case in which a given message failed to be decrypted by a
+implementation-related reason (for instance: uncatched exceptions related to
+encoding, wrong format in serialization). The rationale is that we don’t want
+to increase overhead by retrying decryption on every syncing loop, but we
+don’t want to discard a particular payload. Future versions of the client
+might implement bugfixes or workarounds to try succeed in the processing.</li>
+<li>Therefore, a Soledad Client SHOULD be able to add its own version when it
+marks a message as temporarily failed.</li>
+<li>After some versions, a message SHOULD be able to be marked as permanently
+failed.</li>
+<li>Reservation MUST be released, as any other replica MUST be able to pick the
+message to retry. This covers the case of a new replica being added with an
+updated version, which can be able to handle the failure.</li>
+</ul>
+</div>
+<div class="section" id="deleting-incoming-messagges">
+<p><b><a class="toc-backref" href="#id14">Deleting Incoming Messagges</a><a class="headerlink" href="#deleting-incoming-messagges" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Any message in the <code class="docutils literal"><span class="pre">Incoming</span> <span class="pre">Box</span></code> marked as PROCESSED MAY be deleted by
+the server.</li>
+<li>Any message in the <code class="docutils literal"><span class="pre">Incoming</span> <span class="pre">Box</span></code> marked as PERMANENTLY FAILED MAY be deleted by the server.</li>
+</ul>
+</div>
+<div class="section" id="implementation-details">
+<p><b><a class="toc-backref" href="#id15">Implementation Details</a><a class="headerlink" href="#implementation-details" title="Permalink to this headline"></a></b></p>
+<div class="section" id="server-blob-backend">
+<p><b><a class="toc-backref" href="#id16">Server Blob Backend</a><a class="headerlink" href="#server-blob-backend" title="Permalink to this headline"></a></b></p>
+<p>In the Server Side, the implementation of the <code class="docutils literal"><span class="pre">Incoming</span> <span class="pre">Box</span></code> MUST be done
+exclusively at the level of the BlobStorage.  The Blobs implementation in both
+Soledad Server and Client have enough knowledge of the incoming box semantics
+to allow its processing to be done without resorting to writing documents in
+the main soledad json storage.</p>
+<p>For simplicity, the <code class="docutils literal"><span class="pre">IncomingBox</span></code> endpoint is assumed to be running under the
+same process space than the rest of the Soledad Server.</p>
+<div class="section" id="preffix-namespaces">
+<p><b><a class="toc-backref" href="#id17">Preffix Namespaces</a><a class="headerlink" href="#preffix-namespaces" title="Permalink to this headline"></a></b></p>
+<p>The Trusted Application code responsible for delivering messages into Soledad
+Server <code class="docutils literal"><span class="pre">Incoming</span> <span class="pre">Box</span></code> endpoint MUST specify as a request parameter the
+dedicated namespace that it desires to use and be authorized to write into it.
+This is done so Soledad can list, filter, flag, fetch and reserve only messages
+known to the Trusted Application, avoiding to mix operations with blobs from
+the global namespace or messages from another Trusted Application.</p>
+</div>
+<div class="section" id="list-commands">
+<p><b><a class="toc-backref" href="#id18">LIST commands</a><a class="headerlink" href="#list-commands" title="Permalink to this headline"></a></b></p>
+<p>The server MUST reply to several LIST commands, qualified by namespace and by
+other query parameters. Some of these commands are optional, but the server
+SHOULD reply to them signaling that they are not supported by the implementation.</p>
+<p>The Server MUST return a list with the UIDs of the messages.</p>
+<p>Supported listing features are:
+* Filter by namespace, which selects the namespace to do the list operation.
+* Filter by flag, which lists only messages/blobs marked with the provided flag.
+* Ordering, which changes the order of listing, such as older or newer first.
+* Count, which returns the total list size after filtering, instead of the list itself.</p>
+</div>
+</div>
+<div class="section" id="client-side-processing">
+<p><b><a class="toc-backref" href="#id19">Client side Processing</a><a class="headerlink" href="#client-side-processing" title="Permalink to this headline"></a></b></p>
+<p>It is assumed, for simplicity, that the Trusted Application consumer
+implementation shares the process memory space with the soledad client, but
+this doesn’t have to hold true in the future.</p>
+<p>The class responsible for client side processing on Soledad Client is named
+<code class="docutils literal"><span class="pre">IncomingBoxProcessingLoop</span></code>. Its role is to orchestrate processing with the
+Incoming Box features on server side, so it can deliver messages to it’s
+registered Trusted Application Consumers.</p>
+<ul class="simple">
+<li>To begin a processing round, the client starts by asking a list of the
+pending messages.</li>
+<li>To avoid potentially costly traversals, the client limits the query to the
+most recent N blobs flagged as PENDING.</li>
+<li>To avoid downloading bulky messages in the incoming queue (for example,
+messages with very big attachments), the client MAY limit the query on a
+first pass to all pending blobs  smaller than X Kb.</li>
+<li>After getting the list of Incoming Messages in the PENDING set, the client
+MUST start downloading the blobs according to the uuids returned.</li>
+<li>Download SHOULD happen in chronological order, from the list. Download may
+happen in several modalities: concurrently, or sequentially.</li>
+<li>The Soledad Client MUST provide a mechanism so that any clientside
+counterpart of the Trusted Application (ie: Bitmask Mail) can register a
+consumer for processing and saving each downloaded message.</li>
+<li>In the reference implementation, since the consumers that the client
+registers are executed in the common event loop of the Soledad Client
+process, attention SHOULD be payed to the callbacks not blocking the main
+event loop.</li>
+</ul>
+<p>Example of a Trusted Application Client Consumer:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nd">@implementer</span><span class="p">(</span><span class="n">interfaces</span><span class="o">.</span><span class="n">IIncomingBoxConsumer</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">MyConsumer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;My Consumer&#39;</span>
+
+    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">item_id</span><span class="p">,</span> <span class="n">encrypted</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">cleartext</span> <span class="o">=</span> <span class="n">my_custom_decrypt</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">if</span> <span class="n">encrypted</span> <span class="k">else</span> <span class="n">item</span>
+        <span class="n">processed_parts</span> <span class="o">=</span> <span class="n">my_custom_processing</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">defer</span><span class="o">.</span><span class="n">succeed</span><span class="p">(</span><span class="n">processed_parts</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parts</span><span class="p">,</span> <span class="n">item_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">defer</span><span class="o">.</span><span class="n">gatherResults</span><span class="p">([</span><span class="n">db</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">part</span><span class="p">)</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="future-features">
+<p><b><a class="toc-backref" href="#id20">Future Features</a><a class="headerlink" href="#future-features" title="Permalink to this headline"></a></b></p>
+<p>Still subject to discussion, but some features that are desired for future iterations are:</p>
+<ul class="simple">
+<li>Provide a mechanism to retry documents marked as failed by previous revisions.</li>
+<li>Internalizing public key infrastructure (using ECC).</li>
+<li>ACLs to allow other users to push documents to an user Incoming Box.</li>
+<li>Provide alternative implementations of the Incoming Box endopoint (for example, in Rust)</li>
+</ul>
+<div class="section" id="writing-data-when-user-quota-is-exceeeded">
+<p><b><a class="toc-backref" href="#id21">Writing Data When User Quota is Exceeeded</a><a class="headerlink" href="#writing-data-when-user-quota-is-exceeeded" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>The server SHOULD move the payload to the permanent storage in the user storage space only after checking that the size of the storage currently occupied by the user data, plus the payload size does not exceed the allowed quota, if any, plus a given tolerance limit.</li>
+<li>The Trusted Application SHOULD receive an error message as a response to its storage request, so that it can register the failure to store the data, or inform the sender in the case in which it is acting as a delegate to deliver a message.</li>
+</ul>
+</div>
+<div class="section" id="list-qualifiers">
+<p><b><a class="toc-backref" href="#id22">LIST QUALIFIERS</a><a class="headerlink" href="#list-qualifiers" title="Permalink to this headline"></a></b></p>
+<p>In order to improve performance and responsiveness, a list request MAY be
+qualified by the following parameters that the server SHOULD satisfy.
+The responses are, in any case, a list of the <code class="docutils literal"><span class="pre">uuids</span></code> of the Blobs.</p>
+<ul class="simple">
+<li>Pagination.</li>
+<li>Skip by SIZE THRESHOLD.</li>
+<li>Include messages with PROCESSING flag.</li>
+</ul>
+<div class="section" id="pagination">
+<p><b><a class="toc-backref" href="#id23">PAGINATION</a><a class="headerlink" href="#pagination" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">LIMIT</span></code>: number of messages to receive in a single response</li>
+<li><code class="docutils literal"><span class="pre">PAGE</span></code>: when used with limit, which page to return (limited by the number in LIMIT). (Note that, in reality, any client will just process the first page under a normal functioning mode).</li>
+</ul>
+<p>Example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">IncomingBox</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="s1">&#39;mx&#39;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">page</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="skip-by-size">
+<p><b><a class="toc-backref" href="#id24">SKIP-BY-SIZE</a><a class="headerlink" href="#skip-by-size" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>SIZE_LIMIT: skips messages bigger than a given size limit, to avoid downloading payloads too big when client is interested in a quick list of incoming messages.</li>
+</ul>
+<p>Example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">IncomingBox</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="s1">&#39;mx&#39;</span><span class="p">,</span> <span class="n">size_limit</span><span class="o">=</span><span class="mi">10</span><span class="n">MB</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<span id="document-reference/attachments"></span><div class="section" id="document-attachments">
+<h3>Document attachments<a class="headerlink" href="#document-attachments" title="Permalink to this headline"></a></h3>
+<div class="contents local topic" id="contents">
+<p class="topic-title first">Contents:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#reasoning" id="id1">Reasoning</a></li>
+<li><a class="reference internal" href="#server-side" id="id2">Server-side</a></li>
+<li><a class="reference internal" href="#client-side" id="id3">Client-side</a><ul>
+<li><a class="reference internal" href="#usage-example" id="id4">Usage example</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="reasoning">
+<p><b><a class="toc-backref" href="#id1">Reasoning</a><a class="headerlink" href="#reasoning" title="Permalink to this headline"></a></b></p>
+<p>The type of a Soledad document’s content is <a class="reference external" href="http://www.json.org/">JSON</a>,
+which is good for efficient lookup and indexing. On the other hand, this is
+particularly bad for storing larger amounts of binary data, because:</p>
+<ul class="simple">
+<li>the only way to store data in JSON is as unicode string, and this uses more
+space than what is actually needed for binary data storage.</li>
+<li>upon synchronization, the content of a Soledad document needs to be
+completelly transferred and decrypted for the document to be available for
+use.</li>
+</ul>
+<p>Document attachments were introduced as a means to efficiently store large
+payloads of binary data while avoiding the need to wait for their transfer to
+have access to the documents’ contents.</p>
+</div>
+<div class="section" id="server-side">
+<p><b><a class="toc-backref" href="#id2">Server-side</a><a class="headerlink" href="#server-side" title="Permalink to this headline"></a></b></p>
+<p>In the server, attachments are stored as <a class="reference internal" href="index.html#blobs"><span class="std std-ref">Blobs</span></a>. See
+<a class="reference internal" href="index.html#http-blobs-api"><span class="std std-ref">HTTP Blobs API</span></a> for more information on how to interact with the server
+using HTTP.</p>
+<p>The <span class="xref std std-ref">IBlobsBackend</span> interface is provided, so in the
+future there can be different ways to store attachments in the server side
+(think of a third-party storage, for example). Currently, the
+<a class="reference internal" href="index.html#filesystem-backend"><span class="std std-ref">Filesystem backend</span></a> is the only one that implements that interface.</p>
+</div>
+<div class="section" id="client-side">
+<p><b><a class="toc-backref" href="#id3">Client-side</a><a class="headerlink" href="#client-side" title="Permalink to this headline"></a></b></p>
+<p>In the client, attachments are relations between JSON documents and blobs.</p>
+<p>See <span class="xref std std-ref">client-side-attachment-api</span> for reference.</p>
+<div class="section" id="usage-example">
+<p><b><a class="toc-backref" href="#id4">Usage example</a><a class="headerlink" href="#usage-example" title="Permalink to this headline"></a></b></p>
+<p>The attachments API is currently available in the <cite>Document</cite> class, and the
+document needs to know about the store to be able to manage attachments. When
+you create a new document with soledad, that document will already know about
+the store that created it, and can put/get/delete an attachment:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">twisted.internet.defer</span> <span class="kn">import</span> <span class="n">inlineCallbacks</span>
+
+<span class="nd">@inlineCallbacks</span>
+<span class="k">def</span> <span class="nf">attachment_example</span><span class="p">(</span><span class="n">soledad</span><span class="p">):</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">soledad</span><span class="o">.</span><span class="n">create_doc</span><span class="p">({})</span>
+
+    <span class="n">state</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">doc</span><span class="o">.</span><span class="n">get_attachment_state</span><span class="p">()</span>
+    <span class="n">dirty</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">doc</span><span class="o">.</span><span class="n">is_dirty</span><span class="p">()</span>
+
+    <span class="k">assert</span> <span class="n">state</span> <span class="o">==</span> <span class="n">AttachmentStates</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="k">assert</span> <span class="n">dirty</span> <span class="o">==</span> <span class="bp">False</span>
+
+    <span class="k">yield</span> <span class="n">doc</span><span class="o">.</span><span class="n">put_attachment</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s1">&#39;hackers.txt&#39;</span><span class="p">))</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">doc</span><span class="o">.</span><span class="n">get_attachment_state</span><span class="p">()</span>
+    <span class="n">dirty</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">doc</span><span class="o">.</span><span class="n">is_dirty</span><span class="p">()</span>
+
+    <span class="k">assert</span> <span class="n">state</span> <span class="o">|</span> <span class="n">AttachmentState</span><span class="o">.</span><span class="n">LOCAL</span>
+    <span class="k">assert</span> <span class="n">dirty</span> <span class="o">==</span> <span class="bp">True</span>
+
+    <span class="k">yield</span> <span class="n">soledad</span><span class="o">.</span><span class="n">put_doc</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
+    <span class="n">dirty</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">doc</span><span class="o">.</span><span class="n">is_dirty</span><span class="p">()</span>
+
+    <span class="k">assert</span> <span class="n">dirty</span> <span class="o">==</span> <span class="bp">False</span>
+
+    <span class="k">yield</span> <span class="n">doc</span><span class="o">.</span><span class="n">upload_attachment</span><span class="p">()</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">doc</span><span class="o">.</span><span class="n">get_attachment_state</span><span class="p">()</span>
+
+    <span class="k">assert</span> <span class="n">state</span> <span class="o">|</span> <span class="n">AttachmentState</span><span class="o">.</span><span class="n">REMOTE</span>
+    <span class="k">assert</span> <span class="n">state</span> <span class="o">==</span> <span class="n">AttachmentState</span><span class="o">.</span><span class="n">SYNCED</span>
+
+    <span class="n">fd</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">doc</span><span class="o">.</span><span class="n">get_attachment</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="n">fd</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="o">==</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;hackers.txt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<span id="document-development"></span><div class="section" id="development">
+<h2>Development<a class="headerlink" href="#development" title="Permalink to this headline"></a></h2>
+<p>As an open source project, we welcome contributions of all forms. This page
+should help you get started with development for Soledad.</p>
+<div class="toctree-wrapper compound">
+<span id="document-development/contributing"></span><div class="section" id="contributing">
+<h3>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline"></a></h3>
+<p>Thank you for your interest in contributing to Soledad!</p>
+<div class="section" id="filing-bug-reports">
+<p><b>Filing bug reports<a class="headerlink" href="#filing-bug-reports" title="Permalink to this headline"></a></b></p>
+<p>Bug reports are very welcome. Please file them on the <a class="reference external" href="https://0xacab.org/leap/soledad/issues">0xacab issue tracker</a>. Please include an extensive
+description of the error, the steps to reproduce it, the version of Soledad
+used and the provider used (if applicable).</p>
+</div>
+<div class="section" id="patches">
+<p><b>Patches<a class="headerlink" href="#patches" title="Permalink to this headline"></a></b></p>
+<p>All patches to Soledad should be submitted in the form of pull requests to the
+<a class="reference external" href="https://0xacab.org/leap/soledad">main Soledad repository</a>. These pull
+requests should satisfy the following properties:</p>
+<ul class="simple">
+<li>The pull request should focus on one particular improvement to Soledad.
+Create different pull requests for unrelated features or bugfixes.</li>
+<li>Code should follow <a class="reference external" href="https://www.python.org/dev/peps/pep-0008/">PEP 8</a>,
+especially in the “do what code around you does” sense.</li>
+<li>Pull requests that introduce code must test all new behavior they introduce
+as well as for previously untested or poorly tested behavior that they touch.</li>
+<li>Pull requests are not allowed to break existing tests. We will consider pull
+requests that are breaking the CI as work in progress.</li>
+<li>When introducing new functionality, please remember to write documentation.</li>
+<li>Please sign all of your commits. If you are merging code from other
+contributors, you should sign their commits.</li>
+</ul>
+<div class="section" id="review">
+<p><b>Review<a class="headerlink" href="#review" title="Permalink to this headline"></a></b></p>
+<p>Pull requests must be reviewed before merging. The final responsibility for the
+reviewing of merged code lies with the person merging it. Exceptions to this
+rule are modifications to documentation, packaging, or tests when the need of
+agility of merging without review has little or no impact on the security and
+functionality of working code.</p>
+</div>
+<div class="section" id="getting-help">
+<p><b>Getting help<a class="headerlink" href="#getting-help" title="Permalink to this headline"></a></b></p>
+<p>If you need help you can reach us through one of the following means:</p>
+<ul class="simple">
+<li>IRC: <code class="docutils literal"><span class="pre">#leap</span></code> at <code class="docutils literal"><span class="pre">irc.freenode.org</span></code>.</li>
+<li>Mailing list: <a class="reference external" href="https://lists.riseup.net/www/info/leap-discuss">leap-discuss&#64;lists.riseup.net</a></li>
+</ul>
+</div>
+</div>
+</div>
+<span id="document-development/deprecation"></span><div class="section" id="backwards-compatibility-and-deprecation-policy">
+<h3>Backwards-compatibility and deprecation policy<a class="headerlink" href="#backwards-compatibility-and-deprecation-policy" title="Permalink to this headline"></a></h3>
+<p>Since Soledad has not reached a stable <cite>1.0</cite> release yet, no guarantees are made
+about the stability of its API or the backwards-compatibility of any given
+version.</p>
+<p>Currently, the internal storage representation is experimenting changes that
+will take some time to mature and settle up. For the moment, no given SOLEDAD
+release is offering any backwards-compatibility guarantees.</p>
+<p>Although serious efforts are being made to ensure no data is corrupted or lost
+while upgrading soledad versions, it’s not advised to use SOLEDAD for any
+critical storage at the moment, or to upgrade versions without any external data
+backup (for instance, an email application that uses SOLEDAD should allow to
+export mail data or PGP keys in a convertible format before upgrading).</p>
+<div class="section" id="deprecation-policy">
+<p><b>Deprecation Policy<a class="headerlink" href="#deprecation-policy" title="Permalink to this headline"></a></b></p>
+<p>The points above standing, the development team behind SOLEDAD will strive to
+provide clear migration paths between any two given, consecutive <strong>minor
+releases</strong>, in an automated form wherever possible.</p>
+<p>This means, for example, that a migration script will be provided with the
+<code class="docutils literal"><span class="pre">0.10</span></code> release, to migrate data stored by any of the <code class="docutils literal"><span class="pre">0.9.x</span></code> soledad
+versions. Another script will be provided to migrate from  <code class="docutils literal"><span class="pre">0.10</span></code> to <code class="docutils literal"><span class="pre">0.11</span></code>,
+etc (but not, for instance, from <code class="docutils literal"><span class="pre">0.8</span></code> to <code class="docutils literal"><span class="pre">0.10</span></code>).</p>
+<p>At the same time, there’s a backwards-compatibility policy of <strong>deprecating APIs
+after 2 minor releases</strong>. This means that a feature will start to be marked as
+deprecated in <code class="docutils literal"><span class="pre">0.10</span></code>, with a warning being raised for 2 minor releases, and
+the API will disappear completely no sooner than in <code class="docutils literal"><span class="pre">0.12</span></code>.</p>
+</div>
+</div>
+<span id="document-development/tests"></span><div class="section" id="tests">
+<span id="id1"></span><h3>Tests<a class="headerlink" href="#tests" title="Permalink to this headline"></a></h3>
+<p>We use <a class="reference external" href="https://docs.pytest.org/en/latest/">pytest</a> as a testing framework
+and <a class="reference external" href="https://tox.readthedocs.io">Tox</a> as a test environment manager.
+Currently, tests reside in the  <cite>testing/</cite> folder and some of them need a
+couchdb server to be run against.</p>
+<p>If you do have a couchdb server running on localhost on default port, the
+following command should be enough to run tests:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">tox</span>
+</pre></div>
+</div>
+<div class="section" id="couchdb-dependency">
+<p><b>CouchDB dependency<a class="headerlink" href="#couchdb-dependency" title="Permalink to this headline"></a></b></p>
+<p>In case you want to use a couchdb on another host or port, use the
+<cite>–couch-url</cite> parameter for <cite>pytest</cite>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">--</span> <span class="o">--</span><span class="n">couch</span><span class="o">-</span><span class="n">url</span><span class="o">=</span><span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">couch_host</span><span class="p">:</span><span class="mi">5984</span>
+</pre></div>
+</div>
+<p>If you want to exclude all tests that depend on couchdb, deselect tests marked
+with <cite>needs_couch</cite>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">--</span> <span class="o">-</span><span class="n">m</span> <span class="s1">&#39;not needs_couch&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="benchmark-tests">
+<p><b>Benchmark tests<a class="headerlink" href="#benchmark-tests" title="Permalink to this headline"></a></b></p>
+<p>A set of benchmark tests is provided to measure the time and resources taken to
+perform some actions. See the <a class="reference internal" href="index.html#benchmarks"><span class="std std-ref">documentation for benchmarks</span></a>.</p>
+</div>
+</div>
+<span id="document-development/benchmarks"></span><div class="section" id="benchmarks">
+<span id="id1"></span><h3>Benchmarks<a class="headerlink" href="#benchmarks" title="Permalink to this headline"></a></h3>
+<p>We currently use <a class="reference external" href="https://pytest-benchmark.readthedocs.io/">pytest-benchmark</a>
+to write tests to assess the time and resources taken by various tasks.</p>
+<p>To run benchmark tests, once inside a cloned Soledad repository, do the
+following:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">-</span><span class="n">e</span> <span class="n">benchmark</span>
+</pre></div>
+</div>
+<p>Results of automated benchmarking for each commit in the repository can be seen
+in: <a class="reference external" href="https://benchmarks.leap.se/">https://benchmarks.leap.se/</a>.</p>
+<p>Benchmark tests also depend on <cite>tox</cite> and <cite>CouchDB</cite>. See the <a class="reference internal" href="index.html#tests"><span class="std std-ref">Tests</span></a> page
+for more information on how to setup the test environment.</p>
+<div class="section" id="test-repetition">
+<p><b>Test repetition<a class="headerlink" href="#test-repetition" title="Permalink to this headline"></a></b></p>
+<p><code class="docutils literal"><span class="pre">pytest-benchmark</span></code> runs tests multiple times so it can provide meaningful
+statistics for the time taken for a tipical run of a test function. The number
+of times that the test is run can be manually or automatically configured.</p>
+<p>When automatically configured, the number of runs is decided by taking into
+account multiple <code class="docutils literal"><span class="pre">pytest-benchmark</span></code> configuration parameters. See the <a class="reference external" href="https://pytest-benchmark.readthedocs.io/en/stable/calibration.html">the
+corresponding documenation</a> for more
+details on how automatic calibration works.</p>
+<p>To achieve a reasonable number of repetitions and a reasonable amount of time
+at the same time, we let <code class="docutils literal"><span class="pre">pytest-benchmark</span></code> choose the number of repetitions
+for faster tests, and manually limit the number of repetitions for slower tests.</p>
+<p>Currently, tests for <cite>synchronization</cite> and <cite>sqlcipher asynchronous document
+creation</cite> are fixed to run 4 times each. All the other tests are left for
+<code class="docutils literal"><span class="pre">pytest-benchmark</span></code> to decide how many times to run each one. With this setup,
+the benchmark suite is taking approximatelly 7 minutes to run in our CI server.
+As the benchmark suite is run twice (once for time and cpu stats and a second
+time for memory stats), the whole benchmarks run takes around 15 minutes.</p>
+<p>The actual number of times a test is run when calibration is done automatically
+by <code class="docutils literal"><span class="pre">pytest-benchmark</span></code> depends on many parameters: the time taken for a sample
+run and the configuration of the minimum number of rounds and maximum time
+allowed for a benchmark. For a snapshot of the number of rounds for each test
+function see <a class="reference external" href="https://0xacab.org/leap/soledad/wikis/benchmarks">the soledad benchmarks wiki page</a>.</p>
+</div>
+<div class="section" id="sync-size-statistics">
+<p><b>Sync size statistics<a class="headerlink" href="#sync-size-statistics" title="Permalink to this headline"></a></b></p>
+<p>Currenly, the main use of Soledad is to synchronize client-encrypted email
+data. Because of that, it makes sense to measure the time and resources taken
+to synchronize an amount of data that is realistically comparable to a user’s
+email box.</p>
+<p>In order to determine what is a good example of dataset for synchronization
+tests, we used the size of messages of one week of incoming and outgoing email
+flow of a friendly provider. The statistics that came out from that are (all
+sizes are in KB):</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="27%" />
+<col width="37%" />
+<col width="37%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">&#160;</th>
+<th class="head">outgoing</th>
+<th class="head">incoming</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>min</td>
+<td>0.675</td>
+<td>0.461</td>
+</tr>
+<tr class="row-odd"><td>max</td>
+<td>25531.361</td>
+<td>25571.748</td>
+</tr>
+<tr class="row-even"><td>mean</td>
+<td>252.411</td>
+<td>110.626</td>
+</tr>
+<tr class="row-odd"><td>median</td>
+<td>5.320</td>
+<td>14.974</td>
+</tr>
+<tr class="row-even"><td>mode</td>
+<td>1.404</td>
+<td>1.411</td>
+</tr>
+<tr class="row-odd"><td>stddev</td>
+<td>1376.930</td>
+<td>732.933</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="sync-test-scenarios">
+<p><b>Sync test scenarios<a class="headerlink" href="#sync-test-scenarios" title="Permalink to this headline"></a></b></p>
+<p>Ideally, we would want to run tests for a big data set (i.e. a high number of
+documents and a big payload size), but that may be infeasible given time and
+resource limitations. Because of that, we choose a smaller data set and suppose
+that the behaviour is somewhat linear to get an idea for larger sets.</p>
+<p>Supposing a data set total size of 10MB, some possibilities for number of
+documents and document sizes for testing download and upload can be seen below.
+Scenarios marked in bold are the ones that are actually run in the current sync
+benchmark tests, and you can see the current graphs for each one by following
+the corresponding links:</p>
+<ul class="simple">
+<li>10 x 1M</li>
+<li><strong>20 x 500K</strong> (<a class="reference external" href="https://benchmarks.leap.se/test-dashboard_test_upload_20_500k.html">upload</a>, <a class="reference external" href="https://benchmarks.leap.se/test-dashboard_test_download_20_500k.html">download</a>)</li>
+<li><strong>100 x 100K</strong> (<a class="reference external" href="https://benchmarks.leap.se/test-dashboard_test_upload_100_100k.html">upload</a>, <a class="reference external" href="https://benchmarks.leap.se/test-dashboard_test_download_100_100k.html">download</a>)</li>
+<li>200 x 50K</li>
+<li><strong>1000 x 10K</strong> (<a class="reference external" href="https://benchmarks.leap.se/test-dashboard_test_upload_1000_10k.html">upload</a>, <a class="reference external" href="https://benchmarks.leap.se/test-dashboard_test_download_1000_10k.html">download</a>)</li>
+</ul>
+<p>In each of the above scenarios all the documents are of the same size. If we
+want to account for some variability on document sizes, it is sufficient to
+come up with a simple scenario where the average, minimum and maximum sizes are
+somehow coherent with the above statistics, like the following one:</p>
+<ul class="simple">
+<li>60 x 15KB + 1 x 1MB</li>
+</ul>
+</div>
+</div>
+<span id="document-development/compatibility"></span><div class="section" id="compatibility">
+<h3>Compatibility<a class="headerlink" href="#compatibility" title="Permalink to this headline"></a></h3>
+<p>This page keeps notes about compatibility between different versions of Soledad
+and between Soledad and other components of the <a class="reference external" href="https://leap.se/docs/platform">LEAP Platform</a>.</p>
+<ul class="simple">
+<li>Upgrades of Soledad Server &lt; 0.9.0 to &gt;= 0.9.0 need database migration
+because older code used to use CouchDB’s design documents, while newer code
+got rid of that because it made everything cpu and memory hungry. See <a class="reference external" href="http://soledad.readthedocs.io/en/latest/migrations.html#soledad-server-0-8-to-0-9-couch-database-schema-migration-needed">the
+documentation</a>
+for more information.</li>
+<li>Soledad Server &gt;= 0.7.0 is incompatible with client &lt; 0.7.0 because of
+modifications on encrypted document MAC calculation.</li>
+<li>Soledad Server &gt;= 0.7.0 is incompatible with LEAP Platform &lt; 0.6.1 because
+that platform version implements ephemeral tokens databases and Soledad
+Server needs to act accordingly.</li>
+</ul>
+</div>
+<span id="document-changelog"></span><div class="section" id="changelog">
+<h3>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline"></a></h3>
+<div class="section" id="master">
+<p><b>0.10.4 -  <a class="reference external" href="https://0xacab.org/leap/soledad">master</a><a class="headerlink" href="#master" title="Permalink to this headline"></a></b></p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This version is not yet released and is under active development.</p>
+</div>
+<div class="section" id="misc">
+<p><b>Misc<a class="headerlink" href="#misc" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Add packages for debian buster.</li>
+<li>deb: Make soledad-client depend on soledad-common</li>
+</ul>
+</div>
+</div>
+<div class="section" id="mon-11-sep-2017">
+<p><b>0.10.3 - Mon 11 Sep, 2017<a class="headerlink" href="#mon-11-sep-2017" title="Permalink to this headline"></a></b></p>
+<div class="section" id="server">
+<p><b>Server<a class="headerlink" href="#server" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>[feat] Finished adding support for Incoming API</li>
+<li>[feat] Get config file name from environment variable.</li>
+<li>[bug] Add DELETE method to url mapper.</li>
+<li>[bug] Use correct keyword argument for server state initialization.</li>
+<li><a class="reference external" href="https://0xacab.org/leap/soledad/issues/8924">#8924</a>: [bug] FileBodyProducer consumer usage wasn’t closing the file</li>
+</ul>
+</div>
+<div class="section" id="client">
+<p><b>Client<a class="headerlink" href="#client" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>[feat] Add columns for sync state of blobs inside sqlcipher</li>
+<li>[bug] Several bugfixes for BlobManager initialization.</li>
+<li>[bug] Fix usage of StringIO class in gzip middleware.</li>
+<li><a class="reference external" href="https://0xacab.org/leap/soledad/issues/8924">#8924</a>: [bug] FileBodyProducer consumer usage wasn’t closing the file</li>
+</ul>
+</div>
+<div class="section" id="id3">
+<p><b>Misc<a class="headerlink" href="#id3" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Use latest version of pytest-benchmark.</li>
+<li>Find correct twistd when outside tox envs</li>
+<li>Build packages for zesty and stretch.</li>
+<li>Add benchmark comparing legacy vs blobs sync.</li>
+<li>Add reactor responsiveness tests.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="mon-21-aug-2017">
+<p><b>0.10.2 - Mon 21 Aug, 2017<a class="headerlink" href="#mon-21-aug-2017" title="Permalink to this headline"></a></b></p>
+<div class="section" id="id4">
+<p><b>Server<a class="headerlink" href="#id4" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Enforce namespace to default on server</li>
+<li>Add path partitioning to namespaces</li>
+</ul>
+</div>
+<div class="section" id="id5">
+<p><b>Client<a class="headerlink" href="#id5" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Add namespace to local blobs db table</li>
+<li>Track namespace information on blobs client</li>
+</ul>
+</div>
+</div>
+<div class="section" id="mon-07-aug-2017">
+<p><b>0.10.1 - Mon 07 Aug, 2017<a class="headerlink" href="#mon-07-aug-2017" title="Permalink to this headline"></a></b></p>
+<div class="section" id="id6">
+<p><b>Server<a class="headerlink" href="#id6" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Fixes IncomingBox missing preamble separator (space) which causes client to
+fail parsing.</li>
+</ul>
+</div>
+<div class="section" id="id7">
+<p><b>Client<a class="headerlink" href="#id7" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Adds IncomingBoxProcessLoop and implement the process flow for IncominBox
+specification.</li>
+<li>Adds IIncomingBoxConsumer interface, which can be used by Soledad apps to
+implement consumers for IncomingBox feature.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="july-2017">
+<p><b>0.10.0 - 18 July, 2017<a class="headerlink" href="#july-2017" title="Permalink to this headline"></a></b></p>
+<div class="section" id="id8">
+<p><b>Server<a class="headerlink" href="#id8" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Add an incoming API for email delivery. In the future, this may be used by
+external applications for message delivery.</li>
+<li>Add namespace capability.</li>
+<li>List incoming blobs in chronological order.</li>
+<li>Finish minimal filesystem backend for blobs.</li>
+<li>Update BlobManager to support new server features, such as: namespaces,
+incoming and listing.</li>
+<li>Make the backend configurable for incoming API, so it can use CouchDB now and
+Blobs later.</li>
+</ul>
+</div>
+<div class="section" id="id9">
+<p><b>Client<a class="headerlink" href="#id9" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Use OpenSSL backend for scrypt if OpenSSL &gt;= 1.1</li>
+</ul>
+</div>
+<div class="section" id="id10">
+<p><b>Misc<a class="headerlink" href="#id10" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Refactor preamble to account for PGP encryption scheme</li>
+<li>Removes scrypt dependency</li>
+<li>Unification of Client, Server and Common in a Single python package.</li>
+<li>Build soledad debian package with git-buildpackage.</li>
+<li>Document deprecation policy.</li>
+<li>Documentation is automatically uploaded to: <a class="reference external" href="https://soledad.readthedocs.io/">https://soledad.readthedocs.io/</a></li>
+<li>Launch benchmarks website: <a class="reference external" href="https://benchmarks.leap.se/">https://benchmarks.leap.se/</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="may-2017">
+<p><b>0.9.6 - 31 May, 2017<a class="headerlink" href="#may-2017" title="Permalink to this headline"></a></b></p>
+<div class="section" id="id11">
+<p><b>Server<a class="headerlink" href="#id11" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Minimal Filesystem BlobsBackend implementation, disabled by default.</li>
+</ul>
+</div>
+<div class="section" id="id12">
+<p><b>Client<a class="headerlink" href="#id12" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Minimal Blobs manager implementation</li>
+<li>Blobs API</li>
+<li>Ability to generate recovery code.</li>
+<li>Fix deprecated multibackend call (cryptography).</li>
+</ul>
+</div>
+<div class="section" id="id13">
+<p><b>Misc<a class="headerlink" href="#id13" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Post benchmark results to elasticsearch</li>
+<li>Build docker image and push it to registry every time the dockerfile used for
+tests is changed</li>
+<li>Fix flaky tests</li>
+<li>Cleanup old documentation.</li>
+<li>Added dependency on treq.</li>
+<li>Improve cpu/memory profiling.</li>
+<li>Bumped version to upload wheels to pypi, to workaround for dbschema.sql not
+found after installation in virtualenv.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="march-2017">
+<p><b>0.9.5 -  17 March, 2017<a class="headerlink" href="#march-2017" title="Permalink to this headline"></a></b></p>
+<div class="section" id="id14">
+<p><b>Server<a class="headerlink" href="#id14" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Make database creation appear in logs</li>
+</ul>
+</div>
+<div class="section" id="id15">
+<p><b>Client<a class="headerlink" href="#id15" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li><a class="reference external" href="https://0xacab.org/leap/soledad/issues/8721">#8721</a>: Remove offline flag</li>
+<li>Fix raising of invalid auth token error</li>
+<li>Add default version when decrypting secrets</li>
+<li>Secrets version defaults to v1</li>
+</ul>
+</div>
+<div class="section" id="id17">
+<p><b>Misc<a class="headerlink" href="#id17" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>First steps porting soledad to python3</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id18">
+<p><b>0.9.3 -  06 March, 2017<a class="headerlink" href="#id18" title="Permalink to this headline"></a></b></p>
+<div class="section" id="id19">
+<p><b>Server<a class="headerlink" href="#id19" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Refactor authentication code to use twisted credential system.</li>
+<li>Announce server blobs capabilities</li>
+<li><a class="reference external" href="https://0xacab.org/leap/soledad/issues/8764">#8764</a>: Allow unauthenticated users to retrieve the capabilties banner.</li>
+<li><a class="reference external" href="https://0xacab.org/leap/soledad/issues/6178">#6178</a>: Add robots.txt</li>
+<li>#8762: Add a systemd service file</li>
+<li>Add script to deploy from git</li>
+</ul>
+</div>
+<div class="section" id="id22">
+<p><b>Client<a class="headerlink" href="#id22" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li><a class="reference external" href="https://0xacab.org/leap/soledad/issues/8758">#8758</a>: Add blob size to the crypto preamble</li>
+<li>Improve secrets generation and storage code</li>
+<li>Add offline status to soledad client api.</li>
+<li>Remove syncable property</li>
+</ul>
+</div>
+<div class="section" id="id24">
+<p><b>Misc<a class="headerlink" href="#id24" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Improvements in performance benchmarks.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="december-2016">
+<p><b>0.9.2 - 22 December, 2016<a class="headerlink" href="#december-2016" title="Permalink to this headline"></a></b></p>
+<div class="section" id="performance-improvements">
+<p><b>Performance improvements<a class="headerlink" href="#performance-improvements" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>use AES 256 GCM mode instead of CTR-HMAC.</li>
+<li>streaming encryption/decryption and data transfer.</li>
+</ul>
+</div>
+<div class="section" id="id25">
+<p><b>Server<a class="headerlink" href="#id25" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>move server to a twisted resource entrypoint.</li>
+</ul>
+</div>
+<div class="section" id="id26">
+<p><b>Client<a class="headerlink" href="#id26" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>use twisted http agent in the client.</li>
+<li>maintain backwards compatibility with old crypto scheme (AES 256 CTR-HMAC).
+No migration for now, only in 0.10.</li>
+<li>remove the encryption/decryption pools, replace for inline streaming crypto.</li>
+<li>use sqlcipher transactions on sync.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="november-2016">
+<p><b>0.9.1 - 27 November, 2016<a class="headerlink" href="#november-2016" title="Permalink to this headline"></a></b></p>
+<div class="section" id="server-side-bug-fixes">
+<p><b>Server side bug fixes<a class="headerlink" href="#server-side-bug-fixes" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>fix import on create-user-db script</li>
+<li>patch twisted logger so it works with twistd –syslog</li>
+<li>delay couch state initialization</li>
+<li>improve missing couch config doc error logging</li>
+<li>separate server application into another file</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id27">
+<p><b>0.9.0 - 11 November, 2016<a class="headerlink" href="#id27" title="Permalink to this headline"></a></b></p>
+<div class="section" id="main-features">
+<p><b>Main features<a class="headerlink" href="#main-features" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Server-side changes in couch backend schema.</li>
+<li>Use of tox and pytest to run tests.</li>
+<li>Performance tests.</li>
+</ul>
+</div>
+<div class="section" id="id28">
+<p><b>Server<a class="headerlink" href="#id28" title="Permalink to this headline"></a></b></p>
+<p><strong>* Attention: Migration needed! *</strong></p>
+<p>This version of soledad uses a different database schema in the server couch
+backend. The difference from the old schema is that the use of design documents
+for storing and accessing soledad db metadata was removed because incurred in
+too much memory and time overhead for passing data to the javascript
+interpreter.</p>
+<p>Because of that, you need to run a migration script on your database. Check the
+<cite>scripts/migration/0.9.0/</cite> diretctory for instructions on how to run the
+migration script on your database. Don’t forget to backup before running the
+script!</p>
+</div>
+<div class="section" id="bugfixes">
+<p><b>Bugfixes<a class="headerlink" href="#bugfixes" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Fix order of multipart serialization when writing to couch.</li>
+</ul>
+</div>
+<div class="section" id="features">
+<p><b>Features<a class="headerlink" href="#features" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Log to syslog.</li>
+<li>Remove usage of design documents in couch backend.</li>
+<li>Use _local couch docs for metadata storage.</li>
+<li>Other small improvements in couch backend.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="july-2016">
+<p><b>0.8.1 - 14 July, 2016<a class="headerlink" href="#july-2016" title="Permalink to this headline"></a></b></p>
+<div class="section" id="id29">
+<p><b>Client<a class="headerlink" href="#id29" title="Permalink to this headline"></a></b></p>
+<div class="section" id="id30">
+<p><b>Features<a class="headerlink" href="#id30" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Add recovery document format version for future migrations.</li>
+<li>Use DeferredLock instead of its locking cousin.</li>
+<li>Use DeferredSemaphore instead of its locking cousin.</li>
+</ul>
+</div>
+<div class="section" id="id31">
+<p><b>Bugfixes<a class="headerlink" href="#id31" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li><a class="reference external" href="https://leap.se/code/issues/8180">#8180</a>: Initialize OpenSSL context just once.</li>
+<li>Remove document content conversion to unicode. Users of API are responsible
+for only passing valid JSON to Soledad for storage.</li>
+</ul>
+</div>
+<div class="section" id="id33">
+<p><b>Misc<a class="headerlink" href="#id33" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Add ability to get information about sync phases for profiling purposes.</li>
+<li>Add script for setting up develop environment.</li>
+<li>Refactor bootstrap to remove shared db lock.</li>
+<li>Removed multiprocessing from encdecpool with some extra refactoring.</li>
+<li>Remove user_id argument from Soledad init.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="common">
+<p><b>Common<a class="headerlink" href="#common" title="Permalink to this headline"></a></b></p>
+<div class="section" id="id34">
+<p><b>Features<a class="headerlink" href="#id34" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Embed l2db, forking u1db.</li>
+</ul>
+</div>
+<div class="section" id="id35">
+<p><b>Misc<a class="headerlink" href="#id35" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Toxify tests.</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="apr-2016">
+<p><b>0.8.0 - 18 Apr, 2016<a class="headerlink" href="#apr-2016" title="Permalink to this headline"></a></b></p>
+<div class="section" id="id36">
+<p><b>Client<a class="headerlink" href="#id36" title="Permalink to this headline"></a></b></p>
+<div class="section" id="id37">
+<p><b>Features<a class="headerlink" href="#id37" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li><a class="reference external" href="https://leap.se/code/issues/7656">#7656</a>: Emit multi-user aware events.</li>
+<li>Client will now send documents at a limited size batch due to changes on SyncTarget. The default limit is 500kB. Disabled by default.</li>
+</ul>
+</div>
+<div class="section" id="id39">
+<p><b>Bugfixes<a class="headerlink" href="#id39" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li><a class="reference external" href="https://leap.se/code/issues/7503">#7503</a>: Do not signal sync completion if sync failed.</li>
+<li>Handle missing design doc at GET (get_sync_info). Soledad server can handle this during sync.</li>
+</ul>
+</div>
+<div class="section" id="id41">
+<p><b>Misc<a class="headerlink" href="#id41" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li><a class="reference external" href="https://leap.se/code/issues/7195">#7195</a>: Use cryptography instead of pycryptopp.</li>
+</ul>
+</div>
+<div class="section" id="known-issues">
+<p><b>Known Issues<a class="headerlink" href="#known-issues" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Upload phase of client syncs is still quite slow. Enabling size limited batching
+can help, but you have to make sure that your server is compatible.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id43">
+<p><b>Server<a class="headerlink" href="#id43" title="Permalink to this headline"></a></b></p>
+<div class="section" id="id44">
+<p><b>Features<a class="headerlink" href="#id44" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>General performance improvements.</li>
+<li><a class="reference external" href="https://leap.se/code/issues/7509">#7509</a>: Moves config directory from /etc/leap to /etc/soledad.</li>
+<li>Adds a new config parameter ‘create_cmd’, which allows sysadmin to specify
+which command will create a database. That command was added in
+pkg/create-user-db and debian package automates steps needed for sudo access.</li>
+<li>Read netrc path from configuration file for create-user-db command.</li>
+<li>‘create-user-db’ script now can be configured from soledad-server.conf when
+generating the user’s security document.</li>
+<li>Migrating a user’s database to newest design documents is now possible by
+using a parameter ‘–migrate-all’ on ‘create-user-db’ script.</li>
+<li>Remove tsafe monkeypatch from SSL lib, as it was needed for Twisted &lt;12</li>
+<li>Added two methods to start and finish a batch on backend. They can be used to
+change database behaviour, allowing batch operations to be optimized.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id46">
+<p><b>Common<a class="headerlink" href="#id46" title="Permalink to this headline"></a></b></p>
+<div class="section" id="id47">
+<p><b>Features<a class="headerlink" href="#id47" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li>Add a sanitized command executor for database creation and re-enable user
+database creation on CouchServerState via command line.</li>
+</ul>
+</div>
+<div class="section" id="id48">
+<p><b>Bugfixes<a class="headerlink" href="#id48" title="Permalink to this headline"></a></b></p>
+<ul class="simple">
+<li><a class="reference external" href="https://leap.se/code/issues/7626">#7626</a>: Subclass a leaky leap.common.couch exception to avoid depending on couch.</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<span id="document-api"></span><div class="section" id="api-reference">
+<h2>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline"></a></h2>
+<div class="toctree-wrapper compound">
+<span id="document-api/client"></span><div class="section" id="soledad-client-api">
+<span id="id1"></span><h3>Soledad Client API<a class="headerlink" href="#soledad-client-api" title="Permalink to this headline"></a></h3>
+<dl class="class">
+<dt id="leap.soledad.client.Soledad">
+<em class="property">class </em><code class="descclassname">leap.soledad.client.</code><code class="descname">Soledad</code><span class="sig-paren">(</span><em>uuid</em>, <em>passphrase</em>, <em>secrets_path</em>, <em>local_db_path</em>, <em>server_url</em>, <em>cert_file</em>, <em>shared_db=None</em>, <em>auth_token=None</em>, <em>with_blobs=False</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Soledad provides encrypted data storage and sync.</p>
+<p>A Soledad instance is used to store and retrieve data in a local encrypted
+database and synchronize this database with Soledad server.</p>
+<p>This class is also responsible for bootstrapping users’ account by
+creating cryptographic secrets and/or storing/fetching them on Soledad
+server.</p>
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>uuid</em>, <em>passphrase</em>, <em>secrets_path</em>, <em>local_db_path</em>, <em>server_url</em>, <em>cert_file</em>, <em>shared_db=None</em>, <em>auth_token=None</em>, <em>with_blobs=False</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize configuration, cryptographic keys and dbs.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>uuid</strong> (<em>str</em>) – User’s uuid.</li>
+<li><strong>passphrase</strong> (<em>unicode</em>) – The passphrase for locking and unlocking encryption secrets for
+local and remote storage.</li>
+<li><strong>secrets_path</strong> (<em>str</em>) – Path for storing encrypted key used for symmetric encryption.</li>
+<li><strong>local_db_path</strong> (<em>str</em>) – Path for local encrypted storage db.</li>
+<li><strong>server_url</strong> (<em>str</em>) – URL for Soledad server. This is used either to sync with the user’s
+remote db and to interact with the shared recovery database.</li>
+<li><strong>cert_file</strong> (<em>str</em>) – Path to the certificate of the ca used to validate the SSL
+certificate used by the remote soledad server.</li>
+<li><strong>shared_db</strong> (<em>HTTPDatabase</em>) – The shared database.</li>
+<li><strong>auth_token</strong> (<em>str</em>) – Authorization token for accessing remote databases.</li>
+<li><strong>with_blobs</strong> – A boolean that specifies if this soledad instance should enable
+blobs storage when initialized. This will raise if it’s not the
+first initialization and the passed value is different from when
+the database was first initialized.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><strong>BootstrapSequenceError</strong> – Raised when the secret initialization sequence (i.e. retrieval
+from server or generation and storage on server) has failed for
+some reason.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.change_passphrase">
+<code class="descname">change_passphrase</code><span class="sig-paren">(</span><em>new_passphrase</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.change_passphrase" title="Permalink to this definition"></a></dt>
+<dd><p>Change the passphrase that encrypts the storage secret.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>new_passphrase</strong> (<em>unicode</em>) – The new passphrase.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><strong>NoStorageSecret</strong> – Raised if there’s no storage secret available.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.close">
+<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.close" title="Permalink to this definition"></a></dt>
+<dd><p>Close underlying U1DB database.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.create_doc">
+<code class="descname">create_doc</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.create_doc" title="Permalink to this definition"></a></dt>
+<dd><p>Create a new document.</p>
+<p>You can optionally specify the document identifier, but the document
+must not already exist. See ‘put_doc’ if you want to override an
+existing document.
+If the database specifies a maximum document size and the document
+exceeds it, create will fail and raise a DocumentTooBig exception.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>content</strong> (<em>dict</em>) – A Python dictionary.</li>
+<li><strong>doc_id</strong> (<em>str</em>) – An optional identifier specifying the document id.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A deferred whose callback will be invoked with a document.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">twisted.internet.defer.Deferred</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.create_doc_from_json">
+<code class="descname">create_doc_from_json</code><span class="sig-paren">(</span><em>json</em>, <em>doc_id=None</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.create_doc_from_json" title="Permalink to this definition"></a></dt>
+<dd><p>Create a new document.</p>
+<p>You can optionally specify the document identifier, but the document
+must not already exist. See ‘put_doc’ if you want to override an
+existing document.
+If the database specifies a maximum document size and the document
+exceeds it, create will fail and raise a DocumentTooBig exception.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>json</strong> (<em>dict</em>) – The JSON document string</li>
+<li><strong>doc_id</strong> (<em>str</em>) – An optional identifier specifying the document id.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A deferred whose callback will be invoked with a document.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">twisted.internet.defer.Deferred</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.create_index">
+<code class="descname">create_index</code><span class="sig-paren">(</span><em>index_name</em>, <em>*index_expressions</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.create_index" title="Permalink to this definition"></a></dt>
+<dd><p>Create a named index, which can then be queried for future lookups.</p>
+<p>Creating an index which already exists is not an error, and is cheap.
+Creating an index which does not match the index_expressions of the
+existing index is an error.
+Creating an index will block until the expressions have been evaluated
+and the index generated.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>index_name</strong> (<em>str</em>) – A unique name which can be used as a key prefix</li>
+<li><strong>index_expressions</strong> – <p>index expressions defining the index
+information.</p>
+<p>Examples:</p>
+<p>”fieldname”, or “fieldname.subfieldname” to index alphabetically
+sorted on the contents of a field.</p>
+<p>”number(fieldname, width)”, “lower(fieldname)”</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A deferred.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">twisted.internet.defer.Deferred</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.create_recovery_code">
+<code class="descname">create_recovery_code</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.create_recovery_code" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="leap.soledad.client.Soledad.default_prefix">
+<code class="descname">default_prefix</code><em class="property"> = '/home/drebs/.config/leap/soledad'</em><a class="headerlink" href="#leap.soledad.client.Soledad.default_prefix" title="Permalink to this definition"></a></dt>
+<dd><p>A dictionary that holds locks which avoid multiple sync attempts from the
+same database replica. The dictionary indexes are the paths to each local
+db, so we guarantee that only one sync happens for a local db at a time.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.delete_doc">
+<code class="descname">delete_doc</code><span class="sig-paren">(</span><em>doc</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.delete_doc" title="Permalink to this definition"></a></dt>
+<dd><p>Mark a document as deleted.</p>
+<p>Will abort if the current revision doesn’t match doc.rev.
+This will also set doc.content to None.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>doc</strong> (<em>leap.soledad.common.document.Document</em>) – A document to be deleted.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A deferred.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">twisted.internet.defer.Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.delete_index">
+<code class="descname">delete_index</code><span class="sig-paren">(</span><em>index_name</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.delete_index" title="Permalink to this definition"></a></dt>
+<dd><p>Remove a named index.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>index_name</strong> (<em>str</em>) – The name of the index we are removing</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A deferred.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">twisted.internet.defer.Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.get_all_docs">
+<code class="descname">get_all_docs</code><span class="sig-paren">(</span><em>include_deleted=False</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.get_all_docs" title="Permalink to this definition"></a></dt>
+<dd><p>Get the JSON content for all documents in the database.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>include_deleted</strong> (<em>bool</em>) – If set to True, deleted documents will be
+returned with empty content. Otherwise deleted documents will not
+be included in the results.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A deferred which, when fired, will pass the a tuple
+containing (generation, [Document]) to the callback, with the
+current generation of the database, followed by a list of all the
+documents in the database.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">twisted.internet.defer.Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.get_count_from_index">
+<code class="descname">get_count_from_index</code><span class="sig-paren">(</span><em>index_name</em>, <em>*key_values</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.get_count_from_index" title="Permalink to this definition"></a></dt>
+<dd><p>Return the count for a given combination of index_name
+and key values.</p>
+<p>Extension method made from similar methods in u1db version 13.09</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>index_name</strong> (<em>str</em>) – The index to query</li>
+<li><strong>key_values</strong> (<em>tuple</em>) – values to match. eg, if you have
+an index with 3 fields then you would have:
+get_from_index(index_name, val1, val2, val3)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A deferred whose callback will be invoked with the count.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">twisted.internet.defer.Deferred</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.get_doc">
+<code class="descname">get_doc</code><span class="sig-paren">(</span><em>doc_id</em>, <em>include_deleted=False</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.get_doc" title="Permalink to this definition"></a></dt>
+<dd><p>Get the JSON string for the given document.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>doc_id</strong> (<em>str</em>) – The unique document identifier</li>
+<li><strong>include_deleted</strong> (<em>bool</em>) – If set to True, deleted documents will be
+returned with empty content. Otherwise asking for a deleted
+document will return None.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A deferred whose callback will be invoked with a document
+object.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">twisted.internet.defer.Deferred</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.get_doc_conflicts">
+<code class="descname">get_doc_conflicts</code><span class="sig-paren">(</span><em>doc_id</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.get_doc_conflicts" title="Permalink to this definition"></a></dt>
+<dd><p>Get the list of conflicts for the given document.</p>
+<p>The order of the conflicts is such that the first entry is the value
+that would be returned by “get_doc”.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>doc_id</strong> (<em>str</em>) – The unique document identifier</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A deferred whose callback will be invoked with a list of the
+Document entries that are conflicted.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">twisted.internet.defer.Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.get_docs">
+<code class="descname">get_docs</code><span class="sig-paren">(</span><em>doc_ids</em>, <em>check_for_conflicts=True</em>, <em>include_deleted=False</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.get_docs" title="Permalink to this definition"></a></dt>
+<dd><p>Get the JSON content for many documents.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>doc_ids</strong> (<em>list</em>) – A list of document identifiers.</li>
+<li><strong>check_for_conflicts</strong> (<em>bool</em>) – If set to False, then the conflict check
+will be skipped, and ‘None’ will be returned instead of True/False.</li>
+<li><strong>include_deleted</strong> (<em>bool</em>) – If set to True, deleted documents will be
+returned with empty content. Otherwise deleted documents will not
+be included in the results.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A deferred whose callback will be invoked with an iterable
+giving the document object for each document id in matching
+doc_ids order.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">twisted.internet.defer.Deferred</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.get_from_index">
+<code class="descname">get_from_index</code><span class="sig-paren">(</span><em>index_name</em>, <em>*key_values</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.get_from_index" title="Permalink to this definition"></a></dt>
+<dd><p>Return documents that match the keys supplied.</p>
+<p>You must supply exactly the same number of values as have been defined
+in the index. It is possible to do a prefix match by using ‘*’ to
+indicate a wildcard match. You can only supply ‘*’ to trailing entries,
+(eg ‘val’, ‘*’, ‘*’ is allowed, but ‘*’, ‘val’, ‘val’ is not.)
+It is also possible to append a ‘*’ to the last supplied value (eg
+‘val*’, ‘*’, ‘*’ or ‘val’, ‘val*’, ‘*’, but not ‘val*’, ‘val’, ‘*’)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>index_name</strong> (<em>str</em>) – The index to query</li>
+<li><strong>key_values</strong> (<em>list</em>) – values to match. eg, if you have
+an index with 3 fields then you would have:
+get_from_index(index_name, val1, val2, val3)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A deferred whose callback will be invoked with a list of
+[Document].</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">twisted.internet.defer.Deferred</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.get_index_keys">
+<code class="descname">get_index_keys</code><span class="sig-paren">(</span><em>index_name</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.get_index_keys" title="Permalink to this definition"></a></dt>
+<dd><p>Return all keys under which documents are indexed in this index.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>index_name</strong> (<em>str</em>) – The index to query</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A deferred whose callback will be invoked with a list of
+tuples of indexed keys.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">twisted.internet.defer.Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.get_or_create_service_token">
+<code class="descname">get_or_create_service_token</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.get_or_create_service_token" title="Permalink to this definition"></a></dt>
+<dd><p>Return the stored token for a given service, or generates and stores a
+random one if it does not exist.</p>
+<p>These tokens can be used to authenticate services.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.get_range_from_index">
+<code class="descname">get_range_from_index</code><span class="sig-paren">(</span><em>index_name</em>, <em>start_value</em>, <em>end_value</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.get_range_from_index" title="Permalink to this definition"></a></dt>
+<dd><p>Return documents that fall within the specified range.</p>
+<p>Both ends of the range are inclusive. For both start_value and
+end_value, one must supply exactly the same number of values as have
+been defined in the index, or pass None. In case of a single column
+index, a string is accepted as an alternative for a tuple with a single
+value. It is possible to do a prefix match by using ‘*’ to indicate
+a wildcard match. You can only supply ‘*’ to trailing entries, (eg
+‘val’, ‘*’, ‘*’ is allowed, but ‘*’, ‘val’, ‘val’ is not.) It is also
+possible to append a ‘*’ to the last supplied value (eg ‘val*’, ‘*’,
+‘*’ or ‘val’, ‘val*’, ‘*’, but not ‘val*’, ‘val’, ‘*’)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>index_name</strong> (<em>str</em>) – The index to query</li>
+<li><strong>start_values</strong> (<em>tuple</em>) – tuples of values that define the lower bound of
+the range. eg, if you have an index with 3 fields then you would
+have: (val1, val2, val3)</li>
+<li><strong>end_values</strong> (<em>tuple</em>) – tuples of values that define the upper bound of the
+range. eg, if you have an index with 3 fields then you would have:
+(val1, val2, val3)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A deferred whose callback will be invoked with a list of
+[Document].</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">twisted.internet.defer.Deferred</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.list_indexes">
+<code class="descname">list_indexes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.list_indexes" title="Permalink to this definition"></a></dt>
+<dd><p>List the definitions of all known indexes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A deferred whose callback will be invoked with a list of
+[(‘index-name’, [‘field’, ‘field2’])] definitions.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">twisted.internet.defer.Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="leap.soledad.client.Soledad.local_db_file_name">
+<code class="descname">local_db_file_name</code><em class="property"> = 'soledad.u1db'</em><a class="headerlink" href="#leap.soledad.client.Soledad.local_db_file_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="leap.soledad.client.Soledad.local_db_path">
+<code class="descname">local_db_path</code><a class="headerlink" href="#leap.soledad.client.Soledad.local_db_path" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.put_doc">
+<code class="descname">put_doc</code><span class="sig-paren">(</span><em>doc</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.put_doc" title="Permalink to this definition"></a></dt>
+<dd><p>Update a document.</p>
+<p>If the document currently has conflicts, put will fail.
+If the database specifies a maximum document size and the document
+exceeds it, put will fail and raise a DocumentTooBig exception.</p>
+<p>============================== WARNING ==============================
+This method converts the document’s contents to unicode in-place. This
+means that after calling <cite>put_doc(doc)</cite>, the contents of the
+document, i.e. <cite>doc.content</cite>, might be different from before the
+call.
+============================== WARNING ==============================</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>doc</strong> (<em>leap.soledad.common.document.Document</em>) – A document with new content.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A deferred whose callback will be invoked with the new
+revision identifier for the document. The document object will
+also be updated.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">twisted.internet.defer.Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.raw_sqlcipher_operation">
+<code class="descname">raw_sqlcipher_operation</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.raw_sqlcipher_operation" title="Permalink to this definition"></a></dt>
+<dd><p>Run a raw sqlcipher operation in the local database, and return a
+deferred that will be fired with None.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.raw_sqlcipher_query">
+<code class="descname">raw_sqlcipher_query</code><span class="sig-paren">(</span><em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.raw_sqlcipher_query" title="Permalink to this definition"></a></dt>
+<dd><p>Run a raw sqlcipher query in the local database, and return a deferred
+that will be fired with the result.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.resolve_doc">
+<code class="descname">resolve_doc</code><span class="sig-paren">(</span><em>doc</em>, <em>conflicted_doc_revs</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.resolve_doc" title="Permalink to this definition"></a></dt>
+<dd><p>Mark a document as no longer conflicted.</p>
+<p>We take the list of revisions that the client knows about that it is
+superseding. This may be a different list from the actual current
+conflicts, in which case only those are removed as conflicted.  This
+may fail if the conflict list is significantly different from the
+supplied information. (sync could have happened in the background from
+the time you GET_DOC_CONFLICTS until the point where you RESOLVE)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>doc</strong> (<em>Document</em>) – A Document with the new content to be inserted.</li>
+<li><strong>conflicted_doc_revs</strong> (<em>list</em><em>(</em><em>str</em><em>)</em>) – A list of revisions that the new content
+supersedes.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A deferred.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">twisted.internet.defer.Deferred</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="leap.soledad.client.Soledad.secrets">
+<code class="descname">secrets</code><a class="headerlink" href="#leap.soledad.client.Soledad.secrets" title="Permalink to this definition"></a></dt>
+<dd><p>Return the secrets object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The secrets object.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Secrets</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="leap.soledad.client.Soledad.secrets_file_name">
+<code class="descname">secrets_file_name</code><em class="property"> = 'soledad.json'</em><a class="headerlink" href="#leap.soledad.client.Soledad.secrets_file_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.sync">
+<code class="descname">sync</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.sync" title="Permalink to this definition"></a></dt>
+<dd><p>Synchronize documents with the server replica.</p>
+<p>This method uses a lock to prevent multiple concurrent sync processes
+over the same local db file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A deferred lock that will run the actual sync process when
+the lock is acquired, and which will fire with with the local
+generation before the synchronization was performed.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">twisted.internet.defer.Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="leap.soledad.client.Soledad.sync_lock">
+<code class="descname">sync_lock</code><a class="headerlink" href="#leap.soledad.client.Soledad.sync_lock" title="Permalink to this definition"></a></dt>
+<dd><p>Class based lock to prevent concurrent syncs using the same local db
+file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A shared lock based on this instance’s db file path.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">DeferredLock</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client.Soledad.sync_stats">
+<code class="descname">sync_stats</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client.Soledad.sync_stats" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="leap.soledad.client.Soledad.syncing">
+<code class="descname">syncing</code><a class="headerlink" href="#leap.soledad.client.Soledad.syncing" title="Permalink to this definition"></a></dt>
+<dd><p>Return wether Soledad is currently synchronizing with the server.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Wether Soledad is currently synchronizing with the server.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="leap.soledad.client.Soledad.userid">
+<code class="descname">userid</code><a class="headerlink" href="#leap.soledad.client.Soledad.userid" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<span id="document-api/blobs"></span><div class="section" id="client-side-blobs-api">
+<h3>Client-side Blobs API<a class="headerlink" href="#client-side-blobs-api" title="Permalink to this headline"></a></h3>
+<p>The Soledad Client object has a <code class="docutils literal"><span class="pre">blobmanager</span></code> property which is responsible
+for handling blobs.</p>
+<dl class="class">
+<dt id="leap.soledad.client._db.blobs.BlobManager">
+<em class="property">class </em><code class="descclassname">leap.soledad.client._db.blobs.</code><code class="descname">BlobManager</code><span class="sig-paren">(</span><em>local_path</em>, <em>remote</em>, <em>key</em>, <em>secret</em>, <em>user</em>, <em>token=None</em>, <em>cert_file=None</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>The BlobManager can list, put, get, set flags and synchronize blobs stored
+in local and remote storages.</p>
+<dl class="method">
+<dt id="leap.soledad.client._db.blobs.BlobManager.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>local_path</em>, <em>remote</em>, <em>key</em>, <em>secret</em>, <em>user</em>, <em>token=None</em>, <em>cert_file=None</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the blob manager.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>local_path</strong> (<em>str</em>) – The path for the local blobs database.</li>
+<li><strong>remote</strong> (<em>str</em>) – The URL of the remote storage.</li>
+<li><strong>secret</strong> (<em>str</em>) – The secret used to encrypt/decrypt blobs.</li>
+<li><strong>user</strong> (<em>str</em>) – The uuid of the user.</li>
+<li><strong>token</strong> (<em>str</em>) – The access token for interacting with remote storage.</li>
+<li><strong>cert_file</strong> (<em>str</em>) – The path to the CA certificate file.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._db.blobs.BlobManager.close">
+<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.close" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="leap.soledad.client._db.blobs.BlobManager.concurrent_transfers_limit">
+<code class="descname">concurrent_transfers_limit</code><em class="property"> = 3</em><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.concurrent_transfers_limit" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="leap.soledad.client._db.blobs.BlobManager.concurrent_writes_limit">
+<code class="descname">concurrent_writes_limit</code><em class="property"> = 100</em><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.concurrent_writes_limit" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._db.blobs.BlobManager.count">
+<code class="descname">count</code><span class="sig-paren">(</span><em>namespace=''</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.count" title="Permalink to this definition"></a></dt>
+<dd><p>Count the number of blobs.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>namespace</strong> (<em>str</em>) – Optional parameter to restrict operation to a given namespace.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A deferred that fires with a dict parsed from the JSON
+response, which <cite>count</cite> key has the number of blobs as value.
+Eg.: {“count”: 42}</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">twisted.internet.defer.Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._db.blobs.BlobManager.delete">
+<code class="descname">delete</code><span class="sig-paren">(</span><em>blob_id</em>, <em>namespace=''</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.delete" title="Permalink to this definition"></a></dt>
+<dd><p>Delete a blob from local and remote storages.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>blob_id</strong> (<em>str</em>) – Unique identifier of a blob.</li>
+<li><strong>namespace</strong> (<em>str</em>) – Optional parameter to restrict operation to a given namespace.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A deferred that fires when the operation finishes.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">twisted.internet.defer.Deferred</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._db.blobs.BlobManager.fetch_missing">
+<code class="descname">fetch_missing</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.fetch_missing" title="Permalink to this definition"></a></dt>
+<dd><p>Compare local and remote blobs and fetch what’s missing in local
+storage.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>namespace</strong> (<em>str</em>) – Optional parameter to restrict operation to a given namespace.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._db.blobs.BlobManager.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.get" title="Permalink to this definition"></a></dt>
+<dd><p>Get the blob from local storage or, if not available, from the server.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>blob_id</strong> (<em>str</em>) – Unique identifier of a blob.</li>
+<li><strong>namespace</strong> (<em>str</em>) – Optional parameter to restrict operation to a given namespace.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._db.blobs.BlobManager.get_flags">
+<code class="descname">get_flags</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.get_flags" title="Permalink to this definition"></a></dt>
+<dd><p>Get flags from a given blob_id.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>blob_id</strong> (<em>str</em>) – Unique identifier of a blob.</li>
+<li><strong>namespace</strong> (<em>str</em>) – Optional parameter to restrict operation to a given namespace.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A deferred that fires with a list parsed from JSON response.
+Eg.: [Flags.PENDING]</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">twisted.internet.defer.Deferred</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._db.blobs.BlobManager.local_list">
+<code class="descname">local_list</code><span class="sig-paren">(</span><em>namespace=''</em>, <em>sync_status=None</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.local_list" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="leap.soledad.client._db.blobs.BlobManager.max_retries">
+<code class="descname">max_retries</code><em class="property"> = 3</em><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.max_retries" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._db.blobs.BlobManager.put">
+<code class="descname">put</code><span class="sig-paren">(</span><em>doc</em>, <em>size</em>, <em>namespace=''</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.put" title="Permalink to this definition"></a></dt>
+<dd><p>Put a blob in local storage and upload it to server.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>doc</strong> (<em>leap.soledad.client._document.BlobDoc</em>) – A BlobDoc representing the blob.</li>
+<li><strong>size</strong> (<em>int</em>) – The size of the blob.</li>
+<li><strong>namespace</strong> (<em>str</em>) – Optional parameter to restrict operation to a given namespace.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._db.blobs.BlobManager.refresh_sync_status_from_server">
+<code class="descname">refresh_sync_status_from_server</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.refresh_sync_status_from_server" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._db.blobs.BlobManager.remote_list">
+<code class="descname">remote_list</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.remote_list" title="Permalink to this definition"></a></dt>
+<dd><p>List blobs from server, with filtering and ordering capabilities.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>namespace</strong> (<em>str</em>) – Optional parameter to restrict operation to a given namespace.</li>
+<li><strong>order_by</strong> (<em>str</em>) – Optional parameter to order results. Possible values are:
+date or +date - Ascending order (older first)
+-date - Descending order (newer first)</li>
+<li><strong>filter_flag</strong> (<em>leap.soledad.common.blobs.Flags</em>) – Optional parameter to filter listing to results containing the
+specified tag.</li>
+<li><strong>only_count</strong> (<em>bool</em>) – Optional paramter to return only the number of blobs found.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A deferred that fires with a list parsed from the JSON
+response, holding the requested list of blobs.
+Eg.: [‘blob_id1’, ‘blob_id2’]</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">twisted.internet.defer.Deferred</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._db.blobs.BlobManager.send_missing">
+<code class="descname">send_missing</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.send_missing" title="Permalink to this definition"></a></dt>
+<dd><p>Compare local and remote blobs and send what’s missing in server.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>namespace</strong> (<em>str</em>) – Optional parameter to restrict operation to a given namespace.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._db.blobs.BlobManager.set_flags">
+<code class="descname">set_flags</code><span class="sig-paren">(</span><em>blob_id</em>, <em>flags</em>, <em>namespace=''</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.set_flags" title="Permalink to this definition"></a></dt>
+<dd><p>Set flags for a given blob_id.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>blob_id</strong> (<em>str</em>) – Unique identifier of a blob.</li>
+<li><strong>flags</strong> (<em>[</em><em>leap.soledad.common.blobs.Flags</em><em>]</em>) – List of flags to be set.</li>
+<li><strong>namespace</strong> (<em>str</em>) – Optional parameter to restrict operation to a given namespace.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A deferred that fires when the operation finishes.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">twisted.internet.defer.Deferred</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._db.blobs.BlobManager.sync">
+<code class="descname">sync</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._db.blobs.BlobManager.sync" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<span id="document-api/attachments"></span><div class="section" id="client-side-attachments-api">
+<h3>Client-side Attachments API<a class="headerlink" href="#client-side-attachments-api" title="Permalink to this headline"></a></h3>
+<p>Soledad Documents implement the <code class="docutils literal"><span class="pre">IDocumentWithAttachment</span></code> API that associates
+<a class="reference internal" href="index.html#blobs"><span class="std std-ref">Blobs</span></a> with documents.</p>
+<dl class="class">
+<dt id="leap.soledad.client._document.IDocumentWithAttachment">
+<em class="property">class </em><code class="descclassname">leap.soledad.client._document.</code><code class="descname">IDocumentWithAttachment</code><a class="headerlink" href="#leap.soledad.client._document.IDocumentWithAttachment" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">zope.interface.Interface</span></code></p>
+<p>A document that can have an attachment.</p>
+<dl class="method">
+<dt id="leap.soledad.client._document.IDocumentWithAttachment.delete_attachment">
+<code class="descname">delete_attachment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._document.IDocumentWithAttachment.delete_attachment" title="Permalink to this definition"></a></dt>
+<dd><p>Delete the attachment of this document.</p>
+<p>The pointer to the attachment will be removed from the document
+content, but the document has to be manually put in the database to
+reflect modifications.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A deferred which fires when the attachment has been deleted
+from local storage.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._document.IDocumentWithAttachment.download_attachment">
+<code class="descname">download_attachment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._document.IDocumentWithAttachment.download_attachment" title="Permalink to this definition"></a></dt>
+<dd><p>Download this document’s attachment.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A deferred which fires with the state of the attachment after
+it’s been downloaded, or NONE if there’s no attachment for
+this document.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._document.IDocumentWithAttachment.get_attachment">
+<code class="descname">get_attachment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._document.IDocumentWithAttachment.get_attachment" title="Permalink to this definition"></a></dt>
+<dd><p>Return the data attached to this document.</p>
+<p>If document content contains a pointer to the attachment, try to get
+the attachment from local storage and, if not found, from remote
+storage.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A deferred which fires with a file like-object whose content
+is the attachment of this document, or None if nothing is
+attached.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._document.IDocumentWithAttachment.get_attachment_state">
+<code class="descname">get_attachment_state</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._document.IDocumentWithAttachment.get_attachment_state" title="Permalink to this definition"></a></dt>
+<dd><p>Return the state of the attachment of this document.</p>
+<p>The state is a member of AttachmentStates and is of one of NONE,
+LOCAL, REMOTE or SYNCED.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A deferred which fires with The state of the attachment of
+this document.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._document.IDocumentWithAttachment.is_dirty">
+<code class="descname">is_dirty</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._document.IDocumentWithAttachment.is_dirty" title="Permalink to this definition"></a></dt>
+<dd><p>Return whether this document’s content differs from the contents stored
+in local database.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A deferred which fires with True or False, depending on
+whether this document is dirty or not.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._document.IDocumentWithAttachment.put_attachment">
+<code class="descname">put_attachment</code><span class="sig-paren">(</span><em>fd</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._document.IDocumentWithAttachment.put_attachment" title="Permalink to this definition"></a></dt>
+<dd><p>Attach data to this document.</p>
+<p>Add the attachment to local storage, enqueue for upload.</p>
+<p>The document content will be updated with a pointer to the attachment,
+but the document has to be manually put in the database to reflect
+modifications.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fd</strong> (<em>file-like</em>) – A file-like object whose content will be attached to this
+document.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A deferred which fires when the attachment has been added to
+local storage.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._document.IDocumentWithAttachment.set_store">
+<code class="descname">set_store</code><span class="sig-paren">(</span><em>store</em><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._document.IDocumentWithAttachment.set_store" title="Permalink to this definition"></a></dt>
+<dd><p>Set the store used by this file to manage attachments.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>store</strong> (<a class="reference internal" href="index.html#leap.soledad.client.Soledad" title="leap.soledad.client.Soledad"><em>Soledad</em></a>) – The store used to manage attachments.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="leap.soledad.client._document.IDocumentWithAttachment.upload_attachment">
+<code class="descname">upload_attachment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#leap.soledad.client._document.IDocumentWithAttachment.upload_attachment" title="Permalink to this definition"></a></dt>
+<dd><p>Upload this document’s attachment.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A deferred which fires with the state of the attachment after
+it’s been uploaded, or NONE if there’s no attachment for this
+document.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Deferred</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
