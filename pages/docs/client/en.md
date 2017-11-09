@@ -7,8 +7,8 @@ LEAP Platform => platform]].  It is written in
 [Python](https://www.python.org/) using [PySide](https://wiki.qt.io/PySide) and
 licensed under the
 [GPL3](https://github.com/leapcode/bitmask_client/blob/develop/LICENSE).
-Currently we distribute pre-compiled bundles for Linux, with OS X and Windows
-bundles following soon.
+Currently we distribute pre-compiled bundles for Linux and OS X, with a Windows
+bundle following soon.
 
 For more info and a users guide goto [[bitmask.net => https://bitmask.net]].
 
@@ -39,13 +39,12 @@ We currently support:
 
 ### Using the standalone bundle
 
-* Ubuntu 14.04 (LTS)
-* Mac OSX >= 10.8 (coming very soon)
+* Ubuntu 16.04 (LTS)
+* Mac OSX >= 10.8
 * Note: It *should* work in other Debian based distros
 
 ### Using the debian package
 
-* Ubuntu 15.04 (Vivid Vervet)
-* Ubuntu 15.10 (Wily Werewolf)
-* Debian 8.0 (Jessie)
-* Debian unstable (Sid)
+* Ubuntu 17.04 (Zesty Zapus)
+* Debian 9.0 (Stretch)
+* Debian testing (Buster)
